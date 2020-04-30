@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?><database>
+    <element label="adrepo" max_length="40" name="x_snc_apmdemo_adrepo" sizeclass="2" type="collection">
+        <element attributes="edge_encryption_enabled=true" default="javascript:global.getNextObjNumberPadded();" label="Number" max_length="40" name="number" type="string"/>
+        <element label="Analysis Sequence" max_length="40" name="u_analysissequence" type="integer"/>
+        <element label="Application Service ID" max_length="32" name="u_appsvc_id" reference="cmdb_ci_service_discovered" type="reference"/>
+        <element label="Application Service Name" max_length="100" name="u_appsvc_name" type="string"/>
+        <element label="Business Application ID" max_length="32" name="u_busapp_id" reference="cmdb_ci_business_app" type="reference"/>
+        <element label="Business Application Name" max_length="40" name="u_busapp_name" type="string"/>
+        <element label="Business Application SysID" max_length="40" name="u_busapp_sysid" type="string"/>
+        <element label="Business Capability ID" max_length="32" name="u_buscap_id" reference="cmdb_ci_business_capability" type="reference"/>
+        <element label="Business Capability Name" max_length="40" name="u_buscap_name" type="string"/>
+        <element label="Business Capability SysID" max_length="40" name="u_buscap_sysid" type="string"/>
+        <element label="CI Name" max_length="40" name="u_ci_name" type="string"/>
+        <element label="CI SysID" max_length="40" name="u_ci_sysid" type="string"/>
+        <element label="Configuration Item" max_length="32" name="u_conf_item" reference="cmdb_ci" type="reference"/>
+        <element label="Ticket Number" max_length="100" name="u_incident_number" type="string"/>
+        <element label="Notes" max_length="1000" name="u_notes" type="string"/>
+        <element label="Source" max_length="100" name="u_source" type="string"/>
+        <index name="index">
+            <element name="u_buscap_id"/>
+        </index>
+        <index name="index2">
+            <element name="u_busapp_id"/>
+        </index>
+        <index name="index3">
+            <element name="u_conf_item"/>
+        </index>
+        <index name="index4">
+            <element name="u_appsvc_id"/>
+        </index>
+    </element>
+</database>

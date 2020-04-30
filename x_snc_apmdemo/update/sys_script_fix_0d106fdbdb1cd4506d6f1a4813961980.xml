@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script_fix">
+    <sys_script_fix action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <before>false</before>
+        <description/>
+        <flush_cache>false</flush_cache>
+        <name>testingRelationships</name>
+        <record_for_rollback>false</record_for_rollback>
+        <run_once>true</run_once>
+        <script><![CDATA[var myCITestSid = 'f3a48a320b203200dc03650d37673a98';
+var myLogSource = '[FS:apmdemo]testRun i: ';
+var go2NextLevel = true;
+
+
+myGetIncidents();
+
+
+
+
+// --------------------------------------------------------------------------V
+function myGetIncidents() {
+
+
+    var myIncObj1 = new GlideRecord("incident");
+    myIncObj1.addQuery('cmdb_ci', myCITestSid);
+    myIncObj1.addQuery('cmdb_ci', '!=', '');
+    myIncObj1.query();
+    while (myIncObj1.next()) {
+
+        gs.info(myLogSource + 'incident: ' + myIncObj1.sys_id + ' :: cmdb_ci: ' + myIncObj1.cmdb_ci);
+        var myReturn = myParseRels(myIncObj1.cmdb_ci);
+
+    } // ---[ end: while..myIncObj1 ]---
+    myIncObj1 = null;
+
+
+
+
+} // ---[ end: function..myGetIncidents ]---
+// ---------------------------------------------------------------------------^
+
+
+
+
+
+// --------------------------------------------------------------------------V
+function myParseRels(myChildID) {
+
+    // ---[ test to see if a record exists ]---
+    var testRelObj1 = new GlideRecord("cmdb_rel_ci");
+    testRelObj1.addQuery("child", myChildID);
+    testRelObj1.query();
+    if (testRelObj1.next()) {
+
+        var myRelObj1 = new GlideRecord("cmdb_rel_ci");
+        myRelObj1.addQuery("child", myChildID);
+        myRelObj1.query();
+        while (myRelObj1.next()) {
+
+            gs.info(myLogSource + 'rel record sys_id: ' + myRelObj1.sys_id + ' :: Rel Parent sysid: ' + myRelObj1.parent.sys_id + ' :: Rel Parent name: ' + myRelObj1.parent.name + ' :: rel child name: ' + myRelObj1.child.name);
+
+            // ---[ recursive call ... crawling the rel stack ]---
+            var myReturn = myParseRels(myRelObj1.parent.sys_id);
+
+        } // ---[ end: while..myRelObj1 ]---
+        myRelObj1 = null;
+
+
+
+    } // ---[ end: if..testRelObj1 ]---
+
+
+
+
+
+
+
+} // ---[ end: function..myParseRels ]---
+// ---------------------------------------------------------------------------^
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* -----------------
+var providedByRel = 'Provided By::Provides';
+var usesRel = 'Uses::Used by';
+var consumesRel = 'Consumes::Consumed by';
+var dependsOnRel = 'Depends on::Used by';
+var runsOnRel = 'Runs on::Runs';
+var containsRel = 'Contains::Contained by';
+
+
+var relObj2a = new GlideRecord("cmdb_rel_ci");
+relObj2a.addQuery('type.name', providedByRel);
+relObj2a.query();
+if (relObj2a.next()) {
+    gs.info('[FS]testingRelationships:  providedByRel: ' + providedByRel + ' :: exists  ::  relObj2a.sys_id: ' + relObj2a.sys_id);
+
+} else {
+    gs.info('[FS]testingRelationships:  providedByRel: ' + providedByRel + ' :: does not exist');
+
+
+}
+---------------------- */
+
+
+/* --------------------------------------
+// var gr = new GlideRecord("blah blah");
+// gr.query();
+// if (gr.next()) {
+//    gs.info('table exists');
+// }else{
+// 	gs.info('table does not exist: blah blah');
+// }
+
+
+var myTableName = 'cmdb_rel_ci';
+gs.info('does blah blah exist: ' +  gs.tableExists("blah blah") + ' ::::  does cmdb_rel_ci exist: ' + gs.tableExists(myTableName));
+-------------------------------------- */]]></script>
+        <sys_class_name>sys_script_fix</sys_class_name>
+        <sys_created_by>ekester</sys_created_by>
+        <sys_created_on>2020-04-26 12:05:26</sys_created_on>
+        <sys_id>0d106fdbdb1cd4506d6f1a4813961980</sys_id>
+        <sys_mod_count>31</sys_mod_count>
+        <sys_name>testingRelationships</sys_name>
+        <sys_package display_value="APMDemo" source="x_snc_apmdemo">736b201fdb94d4506d6f1a4813961902</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="APMDemo">736b201fdb94d4506d6f1a4813961902</sys_scope>
+        <sys_update_name>sys_script_fix_0d106fdbdb1cd4506d6f1a4813961980</sys_update_name>
+        <sys_updated_by>ekester</sys_updated_by>
+        <sys_updated_on>2020-04-26 17:33:24</sys_updated_on>
+        <unloadable>false</unloadable>
+    </sys_script_fix>
+</record_update>

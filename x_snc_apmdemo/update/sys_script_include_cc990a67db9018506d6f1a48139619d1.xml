@@ -1,0 +1,386 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script_include">
+    <sys_script_include action="INSERT_OR_UPDATE">
+        <access>public</access>
+        <active>true</active>
+        <api_name>x_snc_apmdemo.ciBusinessAssociations_vs2</api_name>
+        <caller_access/>
+        <client_callable>false</client_callable>
+        <description/>
+        <name>ciBusinessAssociations_vs2</name>
+        <script><![CDATA[var ciBusinessAssociations_vs2 = Class.create();
+ciBusinessAssociations_vs2.prototype = {
+
+    initialize: function() {
+        // --- [begin: function..initialize ]-----------------------------------------------------------------------V
+
+        /* ------------------------
+        Written by Ed Kester [ServiceNow]
+        This script is for analysis use only and is not maintained.
+
+        Table Structure:
+        .u_analysissequence = integer;
+        .u_source = string(100);
+        .u_notes = string (1000);
+		
+        .u_ci_sysid = string (40); ... depricated
+		.u_conf_item = ref > cmdb_ci;
+        .u_ci_name = string (40);
+		
+        .u_buscap_sysid = string(40); ... depricated
+        .u_buscap_name = string(40);
+		.u_buscap_id = ref > cmdb_ci_business_capability;
+		
+        .u_busapp_sysid = string(40); ... depricated
+        .u_busapp_name = string(40);
+		.u_busapp_id = ref > cmdb_ci_business_app;
+		
+		.u_appsvc_name = string(100);
+		.u_appsvc_id = ref > cmdb_ci_service_discovered;
+		
+        .u_incident_number = string(40); [label = Ticket Number]
+
+        ------------------------ */
+
+
+
+        // ---[ begin: define CSDM architecture ]-------------------------------------V
+
+        /* ---[ table names ]---
+        business capability: cmdb_ci_business_capability
+        business application: cmdb_ci_business_app
+        information object: cmdb_ci_information_object
+        application service: cmdb_ci_service_discovered
+        application: cmdb_ci_appl
+        [technical/business] service offering: service_offering
+        [technical/business] service: cmdb_ci_service	
+        ----- */
+
+        businessCapability = 'cmdb_ci_business_capability';
+        businessApplication = 'cmdb_ci_business_app';
+        informationObject = 'cmdb_ci_information_object';
+        applicationService = 'cmdb_ci_service_discovered';
+        application = 'cmdb_ci_appl';
+        serviceOffering = 'service_offering';
+        service = 'cmdb_ci_service';
+
+
+        /* ---[ relationships ]---
+        business capability --Provided By::Provides-> business application
+        business capability --Provided By::Provides-> business service
+        business application --Uses::Used by-> information object
+        business application --Consumes::Consumed by-> application service
+        application service --Depends on::Used by-> application
+        application  --Runs on::Runs-> infrastructure ci's
+        [technical/business] service  <- ref field: "parent"  [techncial/business] service offering
+        techncial service offering --Contains::Contained by-> application service
+        techncial service offering --Contains::Contained by->  infrastructure ci's
+        service portfolio <- ref field: ? business service
+        business service offering --Depends on::Used by-> application service
+        --------- */
+
+        providedByRel = 'Provided By::Provides';
+        usesRel = 'Uses::Used by';
+        consumesRel = 'Consumes::Consumed by';
+        dependsOnRel = 'Depends on::Used by';
+        runsOnRel = 'Runs on::Runs';
+        containsRel = 'Contains::Contained by';
+
+        // ---[ end: define CSDM architecture ]---------------------------------------^
+
+        foundAppSvc = '';
+        foundServer = '';
+        myOrigBusApp = '';
+        myPathCreated = false;
+
+
+        myLogTable = 'x_snc_apmdemo_adrepo';
+        myLogSource = '[SI:apmdemo]ciBusinessAssociations_vs2: ';
+        createSysLogs = true; //  true | false
+        logObj1 = '';
+        myOrigCISysid = '';
+        myOrigCIName = '';
+        myOrigTicketNumber = '';
+
+
+
+        // ---[ get next up sequence number ]---
+        myAnalysisSequence = 0;
+        tempRec2 = new GlideRecord(myLogTable);
+        tempRec2.orderByDesc('u_analysissequence');
+        tempRec2.query();
+        if (tempRec2.next()) {
+            myAnalysisSequence = tempRec2.u_analysissequence;
+            myAnalysisSequence++;
+        } else {
+            myAnalysisSequence = 1;
+        }
+        tempRec2 = null;
+
+
+        // --- [end: function..initialize ]-------------------------------------------------------------------------^
+    },
+
+
+
+
+    mySearchTickets: function(myCIID) {
+        // --- [begin: function..mySearchTickets ]-----------------------------------------------------------------------V
+        /* ---------------------------
+		requirements:
+		Theme – Visibility via power of the platform
+		Full Stack Incident/Problem Reporting: Create Indicator that counts Incidents/Problem targeting infrastructure CI will associated anywhere in the "Application Stack". That is from the server/db whatever, the incident count is rolled up to the Application Service(s) and then up to the Business Application. This/these indicators are valuable themselves but also roll into a higher level indicator for Technical Condition (higher number of INC/PRB is a detractor)
+		----------------------------- */
+
+
+
+
+
+        var myIncObj1 = new GlideRecord("incident");
+        if (myCIID != '') myIncObj1.addQuery('cmdb_ci', myCIID);
+        myIncObj1.addQuery('cmdb_ci', '!=', '');
+        myIncObj1.query();
+        while (myIncObj1.next()) {
+
+            myOrigTicketNumber = myIncObj1.number.toString();
+            if (createSysLogs) gs.info(myLogSource + 'incident: ' + myIncObj1.sys_id + ' :: cmdb_ci: ' + myIncObj1.cmdb_ci + ' :: incident number: ' + myIncObj1.number.toString());
+
+            this.myParseRels(myIncObj1.cmdb_ci);
+
+        } // ---[ end: while..myIncObj1 ]---
+        myIncObj1 = null;
+
+
+        myIncObj1 = new GlideRecord("problem");
+        if (myCIID != '') myIncObj1.addQuery('cmdb_ci', myCIID);
+        myIncObj1.addQuery('cmdb_ci', '!=', '');
+        myIncObj1.query();
+        while (myIncObj1.next()) {
+
+            myOrigTicketNumber = myIncObj1.number.toString();
+            if (createSysLogs) gs.info(myLogSource + 'problem: ' + myIncObj1.sys_id + ' :: cmdb_ci: ' + myIncObj1.cmdb_ci + ' :: problem number: ' + myIncObj1.number.toString());
+
+            this.myParseRels(myIncObj1.cmdb_ci);
+
+        } // ---[ end: while..myIncObj1 ]---
+        myIncObj1 = null;
+
+
+
+
+        // --- [end: function..mySearchTickets ]-------------------------------------------------------------------------^
+    },
+
+
+
+
+    myParseRels: function(myChildID) {
+        // --- [begin: function..myParseRels ]-----------------------------------------------------------------------V
+
+
+        // ---[ get and save original ci ]---
+        if (myOrigCISysid == '') {
+            var getCIObj1 = new GlideRecord("cmdb_ci");
+            getCIObj1.addQuery("sys_id", myChildID);
+            getCIObj1.query();
+            if (getCIObj1.next()) {
+                myOrigCISysid = getCIObj1.sys_id.toString();
+                myOrigCIName = getCIObj1.name.toString();
+            }
+            getCIObj1 = null;
+        }
+
+
+        var myRelObj1 = new GlideRecord("cmdb_rel_ci");
+        myRelObj1.addQuery("child", myChildID);
+        myRelObj1.query();
+        while (myRelObj1.next()) {
+
+            if ((logObj1 == null) || ((logObj1 == ''))) {
+                logObj1 = new GlideRecord(myLogTable);
+                logObj1.initialize();
+                logObj1.u_analysissequence = myAnalysisSequence++;
+                logObj1.u_source = myLogSource;
+            }
+
+
+            if (createSysLogs) gs.info(myLogSource + 'rel record sys_id: ' + myRelObj1.sys_id + ' :: Rel Parent sysid: ' + myRelObj1.parent.sys_id + ' :: Rel Parent name: ' + myRelObj1.parent.name + '  :: parent class: ' + myRelObj1.parent.sys_class_name + '  :: rel child name: ' + myRelObj1.child.name);
+
+
+            if (myRelObj1.parent.sys_class_name == businessCapability) {
+                logObj1.u_buscap_name = myRelObj1.parent.name;
+                //logObj1.u_buscap_sysid = myRelObj1.parent.sys_id;
+                logObj1.u_buscap_id = myRelObj1.parent.sys_id;
+            } else if (myRelObj1.parent.sys_class_name == businessApplication) {
+                logObj1.u_busapp_name = myRelObj1.parent.name;
+                //logObj1.u_busapp_sysid = myRelObj1.parent.sys_id;
+                logObj1.u_busapp_id = myRelObj1.parent.sys_id;
+            } else if (myRelObj1.parent.sys_class_name == applicationService) {
+                logObj1.u_appsvc_name = myRelObj1.parent.name;
+                logObj1.u_appsvc_id = myRelObj1.parent.sys_id;
+            }
+            //logObj1.u_ci_sysid = myOrigCISysid;
+            logObj1.u_conf_item = myOrigCISysid;
+            logObj1.u_ci_name = myOrigCIName;
+            logObj1.u_incident_number = myOrigTicketNumber;
+
+
+            // ---[ recursive call ... crawling the rel stack ]---
+            this.myParseRels(myRelObj1.parent.sys_id);
+
+            if ((logObj1 != '') && (logObj1 != null)) {
+                logObj1.insert();
+                logObj1 = null;
+            }
+
+
+        } // ---[ end: while..myRelObj1 ]---     
+        myRelObj1 = null;
+
+
+        // --- [end: function..myParseRels ]-------------------------------------------------------------------------^
+    },
+
+
+
+
+    myAppSvcSearch: function(myBusApp, myCI) {
+        // --- [begin: function..myAppSvcSearch ]-----------------------------------------------------------------------V
+        /* ---------------------------
+		requirements:
+		Theme - Automation
+		Auto Create Application Service driven by Change:
+		I create a change to create a new server on behalf of a Business Application (Biz App specified within the change using the Business Application reference). Once I complete the change, business rule examines the Business Application's "stack" of Application Services and the Environment (Used for) setting of the server, if it does not find an Application Service associated for that specified environment, create the App service and associate the server properly.
+		... <esk comment> you'll used used_for -> if a ci is in dev you'll create a 'dev' applicationService[cmdb_ci_service_discovered]; if a ci is in prod you'll create a 'prod' applicationService[cmdb_ci_service_discovered]; etc.
+		----------------------------- */
+
+
+        /* ---[ applicable relationships ]---
+        business application --Uses::Used by-> information object
+        business application --Consumes::Consumed by-> application service
+        application service --Depends on::Used by-> application
+        application  --Runs on::Runs-> infrastructure ci's
+        --------- */
+
+        myLogSource = '[SI:apmdemo]ciBusinessAssociations_vs2:: [function] myAppSvcSearch[aa]:: ';
+
+        if (createSysLogs) gs.info(myLogSource + ' passed in parameter(s): myBusApp: ' + myBusApp + ' :: myCI: ' + myCI);
+
+
+        if (myOrigBusApp == '') {
+            myOrigBusApp = myBusApp;
+        }
+
+
+        var myRelObj1 = new GlideRecord("cmdb_rel_ci");
+        myRelObj1.addQuery("parent.sys_id", myBusApp);
+        myRelObj1.query();
+        while (myRelObj1.next()) {
+
+            if (myRelObj1.child.sys_class_name == applicationService) {
+                // ---[ app service found ... look for server infrastructure ci ]---	
+
+                foundAppSvc = myRelObj1.child.sys_id;
+                if (createSysLogs) gs.info(myLogSource + ' ***cmdb_ci_service_discovered found > look for infrastructure ci: ' + foundAppSvc);
+
+                // ---[ recursive call ... continue crawling the rel stack looking for server]---
+                this.myAppSvcSearch(myRelObj1.child.sys_id, myCI);
+
+                foundAppSvc = '';
+
+            }
+            if ((myRelObj1.child.sys_class_name == 'cmdb_ci_server') && (myRelObj1.child.sys_id == myCI) && (foundAppSvc != '')) {
+                // ---[ server found ]---	
+
+                foundServer = myRelObj1.child.sys_id;
+                if (createSysLogs) gs.info(myLogSource + ' ***cmdb_ci_server found: ' + foundServer + ' :: server used for: ' + myRelObj1.child.used_for.toString() + ' :: parent class: ' + myRelObj1.parent.sys_class_name + ' :: parent name: ' + myRelObj1.parent.name.toString());
+
+            }
+
+
+        } // ---[ end: while..myRelObj1 ]---     
+        myRelObj1 = null;
+
+        if (createSysLogs) gs.info(myLogSource + ' end of search:: application service: ' + foundAppSvc + '   :: server: ' + foundServer);
+
+
+        if ((foundAppSvc != '') && (foundServer != '')) {
+            // ---[ there is a complete path ... no action ]---
+            if (createSysLogs) gs.info(myLogSource + ' found complete path::   myOrigBusApp: ' + myOrigBusApp + '  :: foundAppSvc: ' + foundAppSvc + '   :: foundServer: ' + foundServer);
+
+        } else if ((foundAppSvc == '') && (foundServer == '') && (!myPathCreated)) {
+            // ---[ complete path not found ... create:  business application <> application server <> server ]---
+
+            myPathCreated = true;
+
+            if (createSysLogs) gs.info(myLogSource + ' !!!create::  cmdb_ci_service_discovered: ' + myCI.name.toString() + '-' + myCI.used_for.toString());
+
+            // ---[ create application service ]---
+            var appSvcObj2 = new GlideRecord(applicationService);
+            appSvcObj2.initialize();
+            appSvcObj2.name = myCI.name.toString() + '-' + myCI.used_for.toString();
+            appSvcObj2.comments = '> auto created by APM Demo App';
+            var myRtnID = appSvcObj2.insert();
+
+            if (createSysLogs) gs.info(myLogSource + ' !!!application service created::  application sys_id: ' + myRtnID);
+
+            // ---[ business application --Consumes::Consumed by-> application service ]---
+            var myConsumesRelID;
+            var typeObj1 = new GlideRecord("cmdb_rel_type");
+            typeObj1.addQuery("name", consumesRel);
+            typeObj1.query();
+            if (typeObj1.next()) {
+                myConsumesRelID = typeObj1.sys_id;
+            }
+            // ---[ application service --Depends on::Used by-> application   ... using this rel for infra ci's ]---
+            var myDependesRelID;
+            typeObj1 = new GlideRecord("cmdb_rel_type");
+            typeObj1.addQuery("name", dependsOnRel);
+            typeObj1.query();
+            if (typeObj1.next()) {
+                myDependesRelID = typeObj1.sys_id;
+            }
+
+            if (createSysLogs) gs.info(myLogSource + ' !!!create relationships');
+
+            var relObj2 = new GlideRecord('cmdb_rel_ci');
+            relObj2.initialize();
+            relObj2.parent = myOrigBusApp;
+            relObj2.child = myRtnID;
+            relObj2.type = myConsumesRelID;
+            var rel1ID = relObj2.insert();
+            if (createSysLogs) gs.info(myLogSource + ' !!!bus app <> app svc relationship created::  rel sys_id: ' + rel1ID);
+            relObj2 = new GlideRecord('cmdb_rel_ci');
+            relObj2.initialize();
+            relObj2.parent = myRtnID;
+            relObj2.child = myCI;
+            relObj2.type = myDependesRelID;
+            var rel2ID = relObj2.insert();
+            if (createSysLogs) gs.info(myLogSource + ' !!!app svc <> ci relationship created::  rel sys_id: ' + rel2ID);
+
+        } // ---[ end: if..foundAppSvc..else ]---
+
+
+
+        // --- [end: function..myAppSvcSearch ]-------------------------------------------------------------------------^
+    },
+
+
+
+
+    type: 'ciBusinessAssociations_vs2'
+
+};]]></script>
+        <sys_class_name>sys_script_include</sys_class_name>
+        <sys_created_by>ekester</sys_created_by>
+        <sys_created_on>2020-04-27 00:26:05</sys_created_on>
+        <sys_id>cc990a67db9018506d6f1a48139619d1</sys_id>
+        <sys_mod_count>75</sys_mod_count>
+        <sys_name>ciBusinessAssociations_vs2</sys_name>
+        <sys_package display_value="APMDemo" source="x_snc_apmdemo">736b201fdb94d4506d6f1a4813961902</sys_package>
+        <sys_policy>read</sys_policy>
+        <sys_scope display_value="APMDemo">736b201fdb94d4506d6f1a4813961902</sys_scope>
+        <sys_update_name>sys_script_include_cc990a67db9018506d6f1a48139619d1</sys_update_name>
+        <sys_updated_by>ekester</sys_updated_by>
+        <sys_updated_on>2020-04-30 22:57:42</sys_updated_on>
+    </sys_script_include>
+</record_update>

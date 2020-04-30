@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script_include">
+    <sys_script_include action="DELETE">
+        <access>public</access>
+        <active>true</active>
+        <api_name>x_snc_apmdemo.ciBusinessAssociations_v1</api_name>
+        <caller_access/>
+        <client_callable>false</client_callable>
+        <description/>
+        <name>ciBusinessAssociations_v1</name>
+        <script/>
+        <sys_class_name>sys_script_include</sys_class_name>
+        <sys_created_by>ekester</sys_created_by>
+        <sys_created_on>2020-04-26 20:46:21</sys_created_on>
+        <sys_id>a667ddabdb1018506d6f1a4813961944</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>ciBusinessAssociations_v1</sys_name>
+        <sys_package display_value="APMDemo" source="x_snc_apmdemo">736b201fdb94d4506d6f1a4813961902</sys_package>
+        <sys_policy>read</sys_policy>
+        <sys_scope display_value="APMDemo">736b201fdb94d4506d6f1a4813961902</sys_scope>
+        <sys_update_name>sys_script_include_a667ddabdb1018506d6f1a4813961944</sys_update_name>
+        <sys_updated_by>ekester</sys_updated_by>
+        <sys_updated_on>2020-04-26 20:46:21</sys_updated_on>
+    </sys_script_include>
+    <sys_update_version action="INSERT_OR_UPDATE">
+        <action>DELETE</action>
+        <application display_value="APMDemo">736b201fdb94d4506d6f1a4813961902</application>
+        <file_path/>
+        <instance_id>2541daf5db0d4f000e785d00cf9619a2</instance_id>
+        <instance_name>edkester</instance_name>
+        <name>sys_script_include_a667ddabdb1018506d6f1a4813961944</name>
+        <payload><![CDATA[<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script_include"><sys_script_include action="INSERT_OR_UPDATE"><access>public</access><active>true</active><api_name>x_snc_apmdemo.ciBusinessAssociations_v1</api_name><caller_access/><client_callable>false</client_callable><description/><name>ciBusinessAssociations_v1</name><script/><sys_class_name>sys_script_include</sys_class_name><sys_created_by>ekester</sys_created_by><sys_created_on>2020-04-26 20:46:21</sys_created_on><sys_id>a667ddabdb1018506d6f1a4813961944</sys_id><sys_mod_count>0</sys_mod_count><sys_name>ciBusinessAssociations_v1</sys_name><sys_package display_value="APMDemo" source="x_snc_apmdemo">736b201fdb94d4506d6f1a4813961902</sys_package><sys_policy>read</sys_policy><sys_scope display_value="APMDemo">736b201fdb94d4506d6f1a4813961902</sys_scope><sys_update_name>sys_script_include_a667ddabdb1018506d6f1a4813961944</sys_update_name><sys_updated_by>ekester</sys_updated_by><sys_updated_on>2020-04-26 20:46:21</sys_updated_on></sys_script_include></record_update>]]></payload>
+        <payload_hash>1380259336</payload_hash>
+        <record_name>ciBusinessAssociations_v1</record_name>
+        <reverted_from/>
+        <source>f76b201fdb94d4506d6f1a4813961904</source>
+        <source_table>sys_update_set</source_table>
+        <state>previous</state>
+        <sys_created_by>ekester</sys_created_by>
+        <sys_created_on>2020-04-26 20:46:21</sys_created_on>
+        <sys_id>148715ebdb1018506d6f1a4813961920</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_recorded_at>171b83dac390000001</sys_recorded_at>
+        <sys_updated_by>ekester</sys_updated_by>
+        <sys_updated_on>2020-04-26 20:46:21</sys_updated_on>
+        <type>Script Include</type>
+        <update_guid>1c8715ebd3101850d99f7ca61b98a21f</update_guid>
+        <update_guid_history>1c8715ebd3101850d99f7ca61b98a21f:1380259336</update_guid_history>
+    </sys_update_version>
+    <sys_metadata_delete action="INSERT_OR_UPDATE">
+        <sys_audit_delete/>
+        <sys_class_name>sys_metadata_delete</sys_class_name>
+        <sys_created_by>ekester</sys_created_by>
+        <sys_created_on>2020-04-26 20:46:38</sys_created_on>
+        <sys_db_object display_value="" name="sys_script_include">sys_script_include</sys_db_object>
+        <sys_id>1e506b44a500445db72ea638e721aa99</sys_id>
+        <sys_metadata>a667ddabdb1018506d6f1a4813961944</sys_metadata>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>ciBusinessAssociations_v1</sys_name>
+        <sys_package display_value="APMDemo" source="x_snc_apmdemo">736b201fdb94d4506d6f1a4813961902</sys_package>
+        <sys_parent/>
+        <sys_policy>read</sys_policy>
+        <sys_scope display_value="APMDemo">736b201fdb94d4506d6f1a4813961902</sys_scope>
+        <sys_scope_delete display_value="">ae5674ab3c6c4571a66c6960788a4999</sys_scope_delete>
+        <sys_update_name>sys_script_include_a667ddabdb1018506d6f1a4813961944</sys_update_name>
+        <sys_update_version display_value="sys_script_include_a667ddabdb1018506d6f1a4813961944">148715ebdb1018506d6f1a4813961920</sys_update_version>
+        <sys_updated_by>ekester</sys_updated_by>
+        <sys_updated_on>2020-04-26 20:46:38</sys_updated_on>
+    </sys_metadata_delete>
+</record_update>

@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script_include">
+    <sys_script_include action="INSERT_OR_UPDATE">
+        <access>public</access>
+        <active>true</active>
+        <api_name>x_snc_apmdemo.ciBusinessAssociations_v1</api_name>
+        <caller_access/>
+        <client_callable>false</client_callable>
+        <description/>
+        <name>ciBusinessAssociations_v1</name>
+        <script><![CDATA[/* ------------------------
+Written by Ed Kester [ServiceNow]
+This script is for analysis use only and is not maintained.
+
+Table Structure:
+.u_analysissequence = integer;
+.u_source = string(100);
+.u_notes = string (1000);
+.u_ci_sysid = string (40);
+.u_ci_name = string (40);
+.u_buscap_sysid = string(40);
+.u_buscap_name = string(40);
+.u_busapp_sysid = string(40);
+.u_busapp_name = string(40);
+.u_incident_number = string(40);
+
+------------------------ */
+
+
+
+// ---[ begin: define CSDM architecture ]-------------------------------------V
+
+/* ---[ table names ]---
+business capability: cmdb_ci_business_capability
+business application: cmdb_ci_business_app
+information object: cmdb_ci_information_object
+application service: cmdb_ci_service_discovered
+application: cmdb_ci_appl
+[technical/business] service offering: service_offering
+[technical/business] service: cmdb_ci_service	
+----- */
+
+var businessCapability = 'cmdb_ci_business_capability';
+var businessApplication = 'cmdb_ci_business_app';
+var informationObject = 'cmdb_ci_information_object';
+var applicationService = 'cmdb_ci_service_discovered';
+var application = 'cmdb_ci_appl';
+var serviceOffering = 'service_offering';
+var service = 'cmdb_ci_service';
+
+
+
+var myLogTable = 'x_snc_apmdemo_adrepo';
+var myLogSource = '[SI:apmdemo]ciBusinessAssociations_v1: ';
+var createSysLogs = true; //  true | false
+var logObj1;
+
+// ---[ get next up sequence number ]---
+var myAnalysisSequence = 0;
+var tempRec2 = new GlideRecord(myLogTable);
+tempRec2.orderByDesc('u_analysissequence');
+tempRec2.query();
+if (tempRec2.next()) {
+    myAnalysisSequence = tempRec2.u_analysissequence;
+    myAnalysisSequence++;
+} else {
+    myAnalysisSequence = 1;
+}
+tempRec2 = null;
+
+
+// ===========================================================================V
+function ciBusinessAssociations_v1(myIncCI) {
+
+
+    logObj1 = new GlideRecord(myLogTable);
+    logObj1.initialize();
+    logObj1.u_analysissequence = myAnalysisSequence++;
+    logObj1.u_source = myLogSource;
+
+
+    myGetIncidents(myIncCI);
+
+
+    logObj1.insert();
+    logObj1 = null;
+
+} // ---[ end: function..ciBusinessAssociations_v1 ]---
+// ===========================================================================V
+
+
+
+
+
+// --------------------------------------------------------------------------V
+function myGetIncidents(myIncCI) {
+
+    var myIncObj1 = new GlideRecord("incident");
+    myIncObj1.addQuery('cmdb_ci', myIncCI);
+    myIncObj1.addQuery('cmdb_ci', '!=', '');
+    myIncObj1.query();
+    while (myIncObj1.next()) {
+
+        logObj1 = new GlideRecord(myLogTable);
+        logObj1.initialize();
+        logObj1.u_analysissequence = myAnalysisSequence++;
+        logObj1.u_source = myLogSource;
+        logObj1.u_incident_number = myIncObj1.number.toString();
+
+        if (createSysLogs) gs.info(myLogSource + 'incident: ' + myIncObj1.sys_id + ' :: cmdb_ci: ' + myIncObj1.cmdb_ci + ' :: incident number: ' + myIncObj1.number.toString());
+
+        var getCIObj1 = new GlideRecord("cmdb_ci");
+        getCIObj1.addQuery("sys_id", myIncObj1.cmdb_ci);
+        getCIObj1.query();
+        if (getCIObj1.next()) {
+            logObj1.u_ci_sysid = getCIObj1.sys_id.toString();
+            logObj1.u_ci_name = getCIObj1.name.toString();
+        }
+        getCIObj1 = null;
+
+
+        var myReturn = myParseRels(myIncObj1.cmdb_ci, logObj1);
+
+    } // ---[ end: while..myIncObj1 ]---
+    myIncObj1 = null;
+
+
+
+
+} // ---[ end: function..myGetIncidents ]---
+// ---------------------------------------------------------------------------^
+
+
+
+
+
+// --------------------------------------------------------------------------V
+function myParseRels(myChildID, logObj1) {
+
+    // ---[ test to see if a record exists ]---
+    var testRelObj1 = new GlideRecord("cmdb_rel_ci");
+    testRelObj1.addQuery("child", myChildID);
+    testRelObj1.query();
+    if (testRelObj1.next()) {
+
+        var myRelObj1 = new GlideRecord("cmdb_rel_ci");
+        myRelObj1.addQuery("child", myChildID);
+        myRelObj1.query();
+        while (myRelObj1.next()) {
+
+            if (logObj1 == null) {
+                logObj1 = new GlideRecord(myLogTable);
+                logObj1.initialize();
+                logObj1.u_analysissequence = myAnalysisSequence++;
+                logObj1.u_source = myLogSource;
+            }
+
+            if (createSysLogs) gs.info(myLogSource + 'rel record sys_id: ' + myRelObj1.sys_id + ' :: Rel Parent sysid: ' + myRelObj1.parent.sys_id + ' :: Rel Parent name: ' + myRelObj1.parent.name + '  :: parent class: ' + myRelObj1.parent.sys_class_name + '  :: rel child name: ' + myRelObj1.child.name);
+
+
+            if (myRelObj1.parent.sys_class_name == businessCapability) {
+                logObj1.u_buscap_name = myRelObj1.parent.name;
+                logObj1.u_buscap_sysid = myRelObj1.parent.sys_id;
+            } else if (myRelObj1.parent.sys_class_name == businessApplication) {
+                logObj1.u_busapp_name = myRelObj1.parent.name;
+                logObj1.u_busapp_sysid = myRelObj1.parent.sys_id;
+            }
+
+            logObj1.insert();
+            logObj1 = null;
+
+
+            // ---[ recursive call ... crawling the rel stack ]---
+            var myReturn = myParseRels(myRelObj1.parent.sys_id);
+
+        } // ---[ end: while..myRelObj1 ]---
+        myRelObj1 = null;
+
+
+
+    } else {
+        logObj1.insert();
+        logObj1 = null;
+    } // ---[ end: if..testRelObj1..else ]---
+    testRelObj1 = null;
+
+
+
+
+
+
+} // ---[ end: function..myParseRels ]---
+// ---------------------------------------------------------------------------^]]></script>
+        <sys_class_name>sys_script_include</sys_class_name>
+        <sys_created_by>ekester</sys_created_by>
+        <sys_created_on>2020-04-26 17:37:28</sys_created_on>
+        <sys_id>6a0cece3dbdcd4506d6f1a481396196d</sys_id>
+        <sys_mod_count>31</sys_mod_count>
+        <sys_name>ciBusinessAssociations_v1</sys_name>
+        <sys_package display_value="APMDemo" source="x_snc_apmdemo">736b201fdb94d4506d6f1a4813961902</sys_package>
+        <sys_policy>read</sys_policy>
+        <sys_scope display_value="APMDemo">736b201fdb94d4506d6f1a4813961902</sys_scope>
+        <sys_update_name>sys_script_include_6a0cece3dbdcd4506d6f1a481396196d</sys_update_name>
+        <sys_updated_by>ekester</sys_updated_by>
+        <sys_updated_on>2020-04-26 20:40:35</sys_updated_on>
+    </sys_script_include>
+</record_update>

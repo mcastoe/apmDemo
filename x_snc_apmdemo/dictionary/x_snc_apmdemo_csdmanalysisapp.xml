@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?><database>
+    <element label="CSDMAnalysisApp" max_length="40" name="x_snc_apmdemo_csdmanalysisapp" sizeclass="558" type="collection">
+        <element label="Analysis Sequence" max_length="40" name="u_analysissequence" type="integer"/>
+        <element label="Applied Rule" max_length="500" name="u_appliedrule" type="string"/>
+        <element label="Business Capability Leaf Node" max_length="40" name="u_buscap_leafnode" type="boolean"/>
+        <element label="Business Capability Level" max_length="40" name="u_buscap_level" type="integer"/>
+        <element label="Business Capability Parent" max_length="100" name="u_buscap_parent" type="string"/>
+        <element label="Child" max_length="100" name="u_child" type="string"/>
+        <element label="Child Class" max_length="100" name="u_childclass" type="string"/>
+        <element label="Connection Error" max_length="40" name="u_connectionerror" type="boolean"/>
+        <element label="Notes" max_length="500" name="u_notes" type="string"/>
+        <element label="Parent" max_length="100" name="u_parent" type="string"/>
+        <element label="Parent Class" max_length="100" name="u_parentclass" type="string"/>
+        <element label="Relationship" max_length="100" name="u_relationship" type="string"/>
+        <element label="Relationship Error" max_length="40" name="u_relationshiperror" type="boolean"/>
+        <element label="Source" max_length="100" name="u_source" type="string"/>
+        <element label="Service Offering Parent" max_length="100" name="u_svcoffering_parent" type="string"/>
+    </element>
+</database>

@@ -1,0 +1,1056 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_script_include">
+    <sys_script_include action="INSERT_OR_UPDATE">
+        <access>public</access>
+        <active>true</active>
+        <api_name>x_snc_apmdemo.stackCrawler_v1</api_name>
+        <caller_access/>
+        <client_callable>false</client_callable>
+        <description/>
+        <name>stackCrawler_v1</name>
+        <script><![CDATA[/* ------------------------
+Written by Ed Kester [ServiceNow]
+This script is for analysis use only and is not maintained.
+
+Table Structure:
+.u_parent = string 100;
+.u_parentclass = string 100;
+.u_child = string 100;
+.u_childclass = string 100;
+.u_relationship = string 100;
+.u_connectionerror = true/false;
+.u_relationshiperror = true/false;
+.u_notes = string 500;
+.u_source = string 100;
+.u_buscap_leafnode = true/false;
+.u_buscap_parent = string 100;
+.u_buscap_level = int;
+.u_svcoffering_parent = string 100;
+.u_analysissequence = int;
+.u_appliedrule = string 500
+
+------------------------ */
+
+
+
+
+var myLogTable = 'x_snc_apmdemo_csdmanalysisapp';
+
+
+// ---[ begin: define CSDM architecture ]-------------------------------------V
+
+/* ---[ table names ]---
+business capability: cmdb_ci_business_capability
+business application: cmdb_ci_business_app
+information object: cmdb_ci_information_object
+application service: cmdb_ci_service_discovered
+application: cmdb_ci_appl
+[technical/business] service offering: service_offering
+[technical/business] service: cmdb_ci_service	
+----- */
+
+var businessCapability = 'cmdb_ci_business_capability';
+var businessApplication = 'cmdb_ci_business_app';
+var informationObject = 'cmdb_ci_information_object';
+var applicationService = 'cmdb_ci_service_discovered';
+var application = 'cmdb_ci_appl';
+var serviceOffering = 'service_offering';
+var service = 'cmdb_ci_service';
+
+
+
+/* ---[ relationships ]---
+business capability --Provided By::Provides-> business application
+business capability --Provided By::Provides-> business service
+business application --Uses::Used by-> information object
+business application --Consumes::Consumed by-> application service
+application service --Depends on::Used by-> application
+application  --Runs on::Runs-> infrastructure ci's
+[technical/business] service  <- ref field: "parent"  [techncial/business] service offering
+techncial service offering --Contains::Contained by-> application service
+techncial service offering --Contains::Contained by->  infrastructure ci's
+service portfolio <- ref field: ? business service
+business service offering --Depends on::Used by-> application service
+--------- */
+
+var providedByRel = 'Provided By::Provides';
+var usesRel = 'Uses::Used by';
+var consumesRel = 'Consumes::Consumed by';
+var dependsOnRel = 'Depends on::Used by';
+var runsOnRel = 'Runs on::Runs';
+var containsRel = 'Contains::Contained by';
+
+
+
+// ---[ connections ]---
+// ---[ note: this is not parent/child relationship but simply connections ]---
+var busCapConnections = new Array(businessApplication, service);
+var busAppConnections = new Array(businessApplication, businessCapability, informationObject, applicationService);
+var SvcConnections = new Array(serviceOffering);
+var infoObjConnections = new Array(businessApplication);
+var appSvcConnections = new Array(serviceOffering, businessApplication, application);
+var appConnections = new Array('');
+var svcOffConnections = new Array(applicationService, service);
+
+// ---[ end: defind CSDM architecture ]--------------------------------------^
+
+
+var createSysLogs = true; //  true | false
+var quickCheckOnly = true; // true | false
+
+
+var arrayUtil = new global.ArrayUtil();
+
+
+// ---[ get next up sequence number ]---
+var myAnalysisSequence = 0;
+var tempRec2 = new GlideRecord(myLogTable);
+tempRec2.orderByDesc('u_analysissequence');
+tempRec2.query();
+if (tempRec2.next()) {
+    myAnalysisSequence = tempRec2.u_analysissequence;
+    myAnalysisSequence++;
+} else {
+    myAnalysisSequence = 1;
+}
+tempRec2 = null;
+
+
+
+
+// ===========================================================================V
+function stackCrawler_v1() {
+
+
+    if (csdmQuickCheck()) {
+        analyzeRelConnections();
+        if (!quickCheckOnly) {
+            businessCapabilityAnalysis();
+            businessApplicationAnalysis();
+            serviceofferingAnalysis();
+        }
+
+
+        var logObj1 = new GlideRecord(myLogTable);
+        logObj1.initialize();
+        logObj1.u_source = 'stackCrawler_v1';
+        logObj1.u_notes = 'Analysis Complete';
+        logObj1.u_analysissequence = myAnalysisSequence++;
+        logObj1.insert();
+        logObj1 = null;
+
+    }
+
+} // ---[ end: function..stackCrawler_v1 ]---
+// ===========================================================================V
+
+
+
+
+
+
+
+
+
+// ===========================================================================V
+function csdmQuickCheck() {
+
+    var myLogSource = '[SI:apmdemo]initialQuickCheck: ';
+    var rtnValue = true;
+
+    var logObj1 = new GlideRecord(myLogTable);
+    logObj1.initialize();
+    logObj1.u_source = myLogSource;
+    logObj1.u_notes = 'Perform Initial Quick Check:';
+    logObj1.u_analysissequence = myAnalysisSequence++;
+
+
+
+    // ---[ begin: do tables exist ]--------------------------------------------------------V
+
+    /* ---------------------
+    businessCapability = 'cmdb_ci_business_capability';
+    businessApplication = 'cmdb_ci_business_app';
+    informationObject = 'cmdb_ci_information_object';
+    applicationService = 'cmdb_ci_service_discovered';
+    application = 'cmdb_ci_appl';
+    serviceOffering = 'service_offering';
+    service = 'cmdb_ci_service';
+    -------------------- */
+
+
+    logObj1.u_notes += '\n  > do csdm tables exist?';
+    var tblExistRtn = true;
+
+    // ---[ Note:  wanted to use TableUtils but not allowed in scoped apps.  found function gs.tableExists in tableUtils and wokes in scoped apps. ]---
+
+    if (gs.tableExists("cmdb_rel_ci")) {
+        logObj1.u_notes += '\n    >> cmdb_rel_ci exists';
+    } else {
+        tblExistRtn = false;
+        logObj1.u_notes += '\n    >> ERROR: cmdb_rel_ci does not exist';
+    }
+
+    if (gs.tableExists(businessCapability)) {
+        logObj1.u_notes += '\n    >> ' + businessCapability + ' exists';
+    } else {
+        tblExistRtn = false;
+        logObj1.u_notes += '\n    >> ERROR: ' + businessCapability + ' does not exist';
+    }
+
+    if (gs.tableExists(businessApplication)) {
+        logObj1.u_notes += '\n    >> ' + businessApplication + ' exists';
+    } else {
+        tblExistRtn = false;
+        logObj1.u_notes += '\n    >> ERROR: ' + businessApplication + ' does not exist';
+    }
+
+    if (gs.tableExists(applicationService)) {
+        logObj1.u_notes += '\n    >> ' + applicationService + ' exists';
+    } else {
+        tblExistRtn = false;
+        logObj1.u_notes += '\n    >> ERROR: ' + applicationService + ' does not exist';
+    }
+
+    if (gs.tableExists(application)) {
+        logObj1.u_notes += '\n    >> ' + application + ' exists';
+    } else {
+        tblExistRtn = false;
+        logObj1.u_notes += '\n    >> ERROR: ' + application + ' does not exist';
+    }
+
+    if (gs.tableExists(serviceOffering)) {
+        logObj1.u_notes += '\n    >> ' + serviceOffering + ' exists';
+    } else {
+        tblExistRtn = false;
+        logObj1.u_notes += '\n    >> ERROR: ' + serviceOffering + ' does not exist';
+    }
+
+    if (gs.tableExists(service)) {
+        logObj1.u_notes += '\n    >> ' + service + ' exists';
+    } else {
+        tblExistRtn = false;
+        logObj1.u_notes += '\n    >> ERROR: ' + service + ' does not exist';
+    }
+
+    if (!tblExistRtn) {
+        rtnValue = false;
+        if (createSysLogs) gs.info(myLogSource + 'ERROR: A critical csdm table does not exist');
+        logObj1.u_notes += '\n    >> SUMMARY: ERROR: A critical csdm table does not exist';
+    } else {
+        if (createSysLogs) gs.info(myLogSource + 'All critical csdm tables exist');
+        logObj1.u_notes += '\n    >> SUMMARY: All critical csdm tables exist';
+    }
+    // ---[ end: do tables exist ]----------------------------------------------------------^
+
+
+
+
+
+    // ---[ begin: are csdm rel def used ]--------------------------------------------------------V
+
+    /* ---------------
+    providedByRel = 'Provided By::Provides';
+    usesRel = 'Uses::Used by';
+    consumesRel = 'Consumes::Consumed by';
+    dependsOnRel = 'Depends on::Used by';
+    runsOnRel = 'Runs on::Runs';
+    containsRel = 'Contains::Contained by';
+    ------------------ */
+
+    logObj1.u_notes += '\n  > are csdm relationship definitions used?';
+    var relUsedRtn = true;
+
+    // ---[ business capability <Provided By::Provides> business application ]---
+    var relObj2a = new GlideRecord("cmdb_rel_ci");
+    relObj2a.addQuery('type.name', providedByRel);
+    relObj2a.query();
+    if (relObj2a.next()) {
+        logObj1.u_notes += '\n    >> ' + providedByRel + ' is used';
+    } else {
+        // ---[ Provided By::Provides is not used ... check to see if Business Capability used ]---
+
+        var tmpBCObj1 = new GlideRecord(businessCapability);
+        tmpBCObj1.query();
+        if (tmpBCObj1.next()) {
+            // ---[ business capabilty tables are used ... must use proper relationship ]---
+            relUsedRtn = false;
+            logObj1.u_notes += '\n    >> ERROR: ' + businessCapability + '  table is being used but not using ' + providedByRel + ' relationship';
+        } else {
+            // ---[ business capabilty tables are not used ... do not need  Provided By::Provides  relationship ]---
+            relUsedRtn = true;
+            logObj1.u_notes += '\n    >> WARNING: ' + businessCapability + '  table is not being used.  When they are you need to use ' + providedByRel + ' relationship';
+        }
+    } // ---[ end: if..relObj2a..else ]---
+
+
+    // ---[ business application <Consumes::Consumed by> application service ]---
+    relObj2a = new GlideRecord("cmdb_rel_ci");
+    relObj2a.addQuery('type.name', consumesRel);
+    relObj2a.query();
+    if (relObj2a.next()) {
+        logObj1.u_notes += '\n    >> ' + consumesRel + ' is used';
+    } else {
+        relUsedRtn = false;
+        logObj1.u_notes += '\n    >> ' + consumesRel + ' is not used';
+    } // ---[ end: if..relObj2a..else ]---
+
+
+    // ---[ application service <Depends on::Used by> application ]---
+    relObj2a = new GlideRecord("cmdb_rel_ci");
+    relObj2a.addQuery('type.name', dependsOnRel);
+    relObj2a.query();
+    if (relObj2a.next()) {
+        logObj1.u_notes += '\n    >> ' + dependsOnRel + ' is used';
+    } else {
+        relUsedRtn = false;
+        logObj1.u_notes += '\n    >> ' + dependsOnRel + ' is not used';
+    } // ---[ end: if..relObj2a..else ]---
+
+
+
+    // ---[ application <Runs on::Runs> infrastructure ci's ]---
+    relObj2a = new GlideRecord("cmdb_rel_ci");
+    relObj2a.addQuery('type.name', runsOnRel);
+    relObj2a.query();
+    if (relObj2a.next()) {
+        logObj1.u_notes += '\n    >> ' + runsOnRel + ' is used';
+    } else {
+        relUsedRtn = false;
+        logObj1.u_notes += '\n    >> ' + runsOnRel + ' is not used';
+    } // ---[ end: if..relObj2a..else ]---
+
+
+
+    // ---[ service offering <Contains::Contained by> application service / infrastructure ci's ]---
+    relObj2a = new GlideRecord("cmdb_rel_ci");
+    relObj2a.addQuery('type.name', containsRel);
+    relObj2a.query();
+    if (relObj2a.next()) {
+        logObj1.u_notes += '\n    >> ' + containsRel + ' is used';
+    } else {
+        // ---[ Contains::Contained by  is not used ... check to see if service offering used ]---
+
+        tmpBCObj1 = new GlideRecord(serviceOffering);
+        tmpBCObj1.query();
+        if (tmpBCObj1.next()) {
+            // ---[ service offering tables are used ... must use proper relationship ]---
+            relUsedRtn = false;
+            logObj1.u_notes += '\n    >> ERROR: ' + serviceOffering + '  table is being used but not using ' + containsRel + ' relationship';
+        } else {
+            // ---[ service offering tables are not used ... do not need  Contains::Contained by  relationship ]---
+            relUsedRtn = true;
+            logObj1.u_notes += '\n    >> WARNING: ' + serviceOffering + '  table is not being used.  When they are you need to use ' + containsRel + ' relationship';
+        }
+    } // ---[ end: if..relObj2a..else ]---
+
+
+    if (!relUsedRtn) {
+        rtnValue = false;
+        if (createSysLogs) gs.info(myLogSource + 'ERROR: A critical csdm relationship is not being used');
+        logObj1.u_notes += '\n    >> ERROR: A critical csdm relationship is not being used';
+        logObj1.u_relationshiperror = true;
+    } else {
+        if (createSysLogs) gs.info(myLogSource + 'All critical csdm relationships are being used');
+        logObj1.u_notes += '\n    >> All critical csdm relationships are being used';
+        logObj1.u_relationshiperror = false;
+    }
+    // ---[ end: are csdm rel def used ]----------------------------------------------------------^
+
+
+    logObj1.insert();
+    logObj1 = null;
+
+    return (rtnValue);
+
+} // ---[end: function..csdmQuickCheck ]---
+// ===========================================================================V
+
+
+
+
+
+
+
+
+// ===========================================================================V
+function serviceofferingAnalysis() {
+
+    var myLogSource = '[SI:apmdemo]SvcOfferingRelationshipAnalysis: ';
+
+    var svcOffObj1 = new GlideRecord("service_offering");
+    svcOffObj1.query();
+    while (svcOffObj1.next()) {
+
+        var myNotes = '';
+        validateRelatiohship(svcOffObj1.sys_id, myLogSource, myNotes);
+
+    } // ---[ end: while..svcOffObj1 ]---
+    svcOffObj1 = null;
+
+
+} // ---[ end: function..serviceofferingAnalysis ]---
+// ===========================================================================^
+
+
+
+
+
+
+
+
+// ===========================================================================V
+function businessApplicationAnalysis() {
+
+    var myLogSource = '[SI:apmdemo]BusApplicationRelationshipAnalysis: ';
+
+    // ---[ check:  if business application does not have a business capability parent view as top of thread and run rel validation ]---
+    var busAppObj1 = new GlideRecord("cmdb_ci_business_app");
+    busAppObj1.query();
+    while (busAppObj1.next()) {
+
+        var relObj1 = new GlideRecord("cmdb_rel_ci");
+        relObj1.addQuery("child", busAppObj1.sys_id);
+        relObj1.query();
+        while (relObj1.next()) {
+
+            if (relObj1.parent.sys_class_name == businessCapability) {
+                // ---[ has a business capability parent ... business capability is top of thread ]---
+            } else {
+                // ---[ does not have a business capability parent ]---
+                if (createSysLogs) gs.info(myLogSource + '>>> Business Application: ' + relObj1.child.name + ' does not have a Business Capability Parent');
+                var myNotes = 'Business Application: ' + relObj1.child.name + ' does not have a Business Capability Parent';
+                validateRelatiohship(busAppObj1.sys_id, myLogSource, myNotes);
+            }
+        }
+        relObj1 = null;
+    } // ---[ end: while..busAppObj1 ]---
+    busAppObj1 = null;
+
+
+} // ---[ end: function..businessApplicationAnalysis ]---
+// ===========================================================================^
+
+
+
+
+
+// ===========================================================================V
+function businessCapabilityAnalysis() {
+
+    var myLogSource = '[SI:apmdemo]BusCapabilityRelationshipAnalysis: ';
+
+    var busCapObj1 = new GlideRecord(businessCapability);
+    busCapObj1.query();
+    while (busCapObj1.next()) {
+
+        if (createSysLogs) gs.info(myLogSource + 'Business Capability: ' + busCapObj1.name);
+
+        if (!busCapObj1.leaf_node) {
+            var logObj1 = new GlideRecord(myLogTable);
+            logObj1.initialize();
+            logObj1.u_source = myLogSource;
+            if (busCapObj1.name) logObj1.u_notes = busCapObj1.name;
+            logObj1.u_buscap_leafnode = busCapObj1.leaf_node;
+            logObj1.u_buscap_level = busCapObj1.hierarchy_level;
+            if (busCapObj1.parent.name) logObj1.u_buscap_parent = busCapObj1.parent.name;
+            logObj1.u_analysissequence = myAnalysisSequence++;
+            logObj1.u_notes = 'Business Capability: ' + busCapObj1.name + ' is not a leaf node and will have no connection to Business Application';
+            logObj1.insert();
+            logObj1 = null;
+        } else {
+            // ---[ business capability is a leaf node ... verify relationship record(s) ]---
+            var myNotes = '';
+
+            if (createSysLogs) gs.info(myLogSource + '***Calling validateRelatiohship:: busCapObj1.sys_id: ' + busCapObj1.sys_id);
+            validateRelatiohship(busCapObj1.sys_id, myLogSource, myNotes);
+        } // ---[ end: if..!leaf_node..else ]---
+
+
+    } // ---[ end: while..busCapObj1 ]---
+    busCapObj1 = null;
+
+} // ---[ end: function..businessCapabilityAnalysis ]---
+// ===========================================================================^
+
+
+
+// ===========================================================================V
+function validateRelatiohship(parent, myLogSource, myNotes) {
+
+
+    // ---[ parse relationship ]---
+    var foundRecord = false;
+    var relObj1 = new GlideRecord("cmdb_rel_ci");
+    relObj1.addQuery("parent", parent);
+    relObj1.query();
+    while (relObj1.next()) {
+        foundRecord = true;
+
+        var logObj1 = new GlideRecord(myLogTable);
+        logObj1.initialize();
+        logObj1.u_parent = relObj1.parent.name;
+        logObj1.u_parentclass = relObj1.parent.sys_class_name;
+        logObj1.u_child = relObj1.child.name;
+        logObj1.u_childclass = relObj1.child.sys_class_name;
+        logObj1.u_relationship = relObj1.type.name;
+        logObj1.u_source = myLogSource;
+
+
+        if (myNotes != '') {
+            logObj1.u_notes = myNotes;
+        } else {
+            logObj1.u_notes = 'Relationship Analysis';
+        }
+
+        if (relObj1.parent.sys_class_name == businessCapability) {
+            var busCapObj2 = new GlideRecord(businessCapability);
+            busCapObj2.addQuery('sys_id', parent);
+            busCapObj2.query();
+            if (busCapObj2.next()) {
+
+                logObj1.u_buscap_leafnode = busCapObj2.leaf_node;
+                logObj1.u_buscap_level = busCapObj2.hierarchy_level;
+                if (busCapObj2.parent.name) logObj1.u_buscap_parent = busCapObj2.parent.name;
+            }
+            busCapObj2 = null;
+        }
+
+
+
+        if (createSysLogs) gs.info(myLogSource + 'Parent: ' + relObj1.parent.name + ' :: Parent Class: ' + relObj1.parent.sys_class_name + ' :: Child: ' + relObj1.child.name + ' :: Child Class: ' + relObj1.child.sys_class_name + ' :: Relationship Type: ' + relObj1.type.name);
+
+
+        // ---[ begin: relationship check ]--------------------------------------------------V
+
+        if ((relObj1.parent.sys_class_name == businessCapability) && (relObj1.child.sys_class_name == businessApplication)) {
+            // ---[ analyze relationship: business capability --Provided By::Provides-> business application ]---
+
+
+            logObj1.u_notes += '\n > analyze relationship: business capability --Provided By::Provides-> business application';
+            logObj1.u_appliedrule = 'business capability --Provided By::Provides-> business application';
+
+
+            if (relObj1.type.name == providedByRel) {
+                // ---[ correct relationship ]---
+
+                if (createSysLogs) gs.info(myLogSource + 'Correct Relationship [business capability --Provided By::Provides-> business application] :: Parent: ' + relObj1.parent.name + ' :: Parent Class: ' + relObj1.parent.sys_class_name + ' :: Child: ' + relObj1.child.name + ' :: Child Class: ' + relObj1.child.sys_class_name + ' :: Relationship Type: ' + relObj1.type.name);
+
+                logObj1.u_relationshiperror = false;
+
+
+            } else {
+                // ---[ Incorrect relationship ]---
+
+                if (createSysLogs) gs.info(myLogSource + 'Incorrect Relationship [business capability --Provided By::Provides-> business application] :: Parent: ' + relObj1.parent.name + ' :: Parent Class: ' + relObj1.parent.sys_class_name + ' :: Child: ' + relObj1.child.name + ' :: Child Class: ' + relObj1.child.sys_class_name + ' :: Relationship Type: ' + relObj1.type.name);
+
+                logObj1.u_relationshiperror = true;
+
+
+            } // ---[ end: if..providedByRel..else ]---
+
+
+        } else if ((relObj1.parent.sys_class_name == businessCapability) && ((relObj1.child.sys_class_name == service) && (relObj1.child.service_classification == 'Business Service'))) {
+            // ---[ analyze relationship: business capability --Provided By::Provides-> business service ]---
+
+            logObj1.u_notes += '\n > analyze relationship: business capability --Provided By::Provides-> business service';
+            logObj1.u_appliedrule = 'business capability --Provided By::Provides-> business service';
+
+            if (relObj1.type.name == providedByRel) {
+                // ---[ correct relationship ]---
+
+                if (createSysLogs) gs.info(myLogSource + 'Correct Relationship [business capability --Provided By::Provides-> business service] :: Parent: ' + relObj1.parent.name + ' :: Parent Class: ' + relObj1.parent.sys_class_name + ' :: Child: ' + relObj1.child.name + ' :: Child Class: ' + relObj1.child.sys_class_name + ' :: Relationship Type: ' + relObj1.type.name);
+
+                logObj1.u_relationshiperror = false;
+
+
+            } else {
+                // ---[ Incorrect relationship ]---
+
+                if (createSysLogs) gs.info(myLogSource + 'Incorrect Relationship [business capability --Provided By::Provides-> business service] :: Parent: ' + relObj1.parent.name + ' :: Parent Class: ' + relObj1.parent.sys_class_name + ' :: Child: ' + relObj1.child.name + ' :: Child Class: ' + relObj1.child.sys_class_name + ' :: Relationship Type: ' + relObj1.type.name);
+
+                logObj1.u_relationshiperror = true;
+
+
+            } // ---[ end: if..providedByRel..else ]---
+
+
+        } else if ((relObj1.parent.sys_class_name == businessApplication) && (relObj1.child.sys_class_name == informationObject)) {
+            // ---[ analyze relationship: business application --Uses::Used by-> information object ]---
+
+            logObj1.u_notes += '\n > analyze relationship: business application --Uses::Used by-> information object';
+            logObj1.u_appliedrule = 'business application --Uses::Used by-> information object';
+
+            if (relObj1.type.name == usesRel) {
+                // ---[ correct relationship ]---
+
+                if (createSysLogs) gs.info(myLogSource + 'Correct Relationship [business application --Uses::Used by-> information object] :: Parent: ' + relObj1.parent.name + ' :: Parent Class: ' + relObj1.parent.sys_class_name + ' :: Child: ' + relObj1.child.name + ' :: Child Class: ' + relObj1.child.sys_class_name + ' :: Relationship Type: ' + relObj1.type.name);
+
+                logObj1.u_relationshiperror = false;
+
+
+            } else {
+                // ---[ Incorrect relationship ]---
+
+                if (createSysLogs) gs.info(myLogSource + 'Incorrect Relationship [business application --Uses::Used by-> information object] :: Parent: ' + relObj1.parent.name + ' :: Parent Class: ' + relObj1.parent.sys_class_name + ' :: Child: ' + relObj1.child.name + ' :: Child Class: ' + relObj1.child.sys_class_name + ' :: Relationship Type: ' + relObj1.type.name);
+
+                logObj1.u_relationshiperror = true;
+
+
+            } // ---[ end: if..providedByRel..else ]---			
+
+
+        } else if ((relObj1.parent.sys_class_name == businessApplication) && (relObj1.child.sys_class_name == applicationService)) {
+            // ---[ analyze relationship: business application --Consumes::Consumed by-> application service ]---
+
+            logObj1.u_notes += '\n > analyze relationship: business application --Consumes::Consumed by-> application service';
+            logObj1.u_appliedrule = 'business application --Consumes::Consumed by-> application service';
+
+
+            if (relObj1.type.name == consumesRel) {
+                // ---[ correct relationship ]---
+
+                if (createSysLogs) gs.info(myLogSource + 'Correct Relationship [business application --Consumes::Consumed by-> application service] :: Parent: ' + relObj1.parent.name + ' :: Parent Class: ' + relObj1.parent.sys_class_name + ' :: Child: ' + relObj1.child.name + ' :: Child Class: ' + relObj1.child.sys_class_name + ' :: Relationship Type: ' + relObj1.type.name);
+
+                logObj1.u_relationshiperror = false;
+
+
+            } else {
+                // ---[ Incorrect relationship ]---
+
+                if (createSysLogs) gs.info(myLogSource + 'Incorrect Relationship [business application --Consumes::Consumed by-> application service] :: Parent: ' + relObj1.parent.name + ' :: Parent Class: ' + relObj1.parent.sys_class_name + ' :: Child: ' + relObj1.child.name + ' :: Child Class: ' + relObj1.child.sys_class_name + ' :: Relationship Type: ' + relObj1.type.name);
+
+                logObj1.u_relationshiperror = true;
+
+
+            } // ---[ end: if..providedByRel..else ]---			
+
+
+
+        } else if ((relObj1.parent.sys_class_name == applicationService) && (relObj1.child.sys_class_name == application)) {
+            // ---[ analyze relationship: application service --Depends on::Used by-> application ]---
+
+            logObj1.u_notes += '\n > analyze relationship: application service --Depends on::Used by-> application';
+            logObj1.u_appliedrule = 'application service --Depends on::Used by-> application';
+
+            if (relObj1.type.name == dependsOnRel) {
+                // ---[ correct relationship ]---
+
+                if (createSysLogs) gs.info(myLogSource + 'Correct Relationship [application service --Depends on::Used by-> application] :: Parent: ' + relObj1.parent.name + ' :: Parent Class: ' + relObj1.parent.sys_class_name + ' :: Child: ' + relObj1.child.name + ' :: Child Class: ' + relObj1.child.sys_class_name + ' :: Relationship Type: ' + relObj1.type.name);
+
+                logObj1.u_relationshiperror = false;
+
+
+            } else {
+                // ---[ Incorrect relationship ]---
+
+                if (createSysLogs) gs.info(myLogSource + 'Incorrect Relationship [application service --Depends on::Used by-> application] :: Parent: ' + relObj1.parent.name + ' :: Parent Class: ' + relObj1.parent.sys_class_name + ' :: Child: ' + relObj1.child.name + ' :: Child Class: ' + relObj1.child.sys_class_name + ' :: Relationship Type: ' + relObj1.type.name);
+
+                logObj1.u_relationshiperror = true;
+
+
+            } // ---[ end: if..providedByRel..else ]---			
+
+
+
+        } else if (((relObj1.parent.sys_class_name == serviceOffering) && (relObj1.parent.service_classification == 'Technical Service')) && (relObj1.child.sys_class_name == applicationService)) {
+            // ---[ analyze relationship: techncial service offering --Contains::Contained by-> application service ]---
+
+            logObj1.u_notes += '\n > analyze relationship: techncial service offering --Contains::Contained by-> application service';
+            logObj1.u_appliedrule = 'techncial service offering --Contains::Contained by-> application service';
+
+            var tempObj3 = new GlideRecord("service_offering");
+            tempObj3.addQuery("sys_id", parent);
+            tempObj3.query();
+            if (tempObj3.next()) {
+                if (tempObj3.parent) logObj1.u_notes += '\n > Technical Service Offering:  ' + relObj1.parent.name + '  has a Service Offering Parent of:  ' + tempObj3.parent.name;
+            }
+
+            if (relObj1.type.name == containsRel) {
+                // ---[ correct relationship ]---
+
+                if (createSysLogs) gs.info(myLogSource + 'Correct Relationship [techncial service offering --Contains::Contained by-> application service] :: Parent: ' + relObj1.parent.name + ' :: Parent Class: ' + relObj1.parent.sys_class_name + ' :: Child: ' + relObj1.child.name + ' :: Child Class: ' + relObj1.child.sys_class_name + ' :: Relationship Type: ' + relObj1.type.name);
+
+                logObj1.u_relationshiperror = false;
+
+
+            } else {
+                // ---[ Incorrect relationship ]---
+
+                if (createSysLogs) gs.info(myLogSource + 'Incorrect Relationship [techncial service offering --Contains::Contained by-> application service] :: Parent: ' + relObj1.parent.name + ' :: Parent Class: ' + relObj1.parent.sys_class_name + ' :: Child: ' + relObj1.child.name + ' :: Child Class: ' + relObj1.child.sys_class_name + ' :: Relationship Type: ' + relObj1.type.name);
+
+                logObj1.u_relationshiperror = true;
+
+
+            } // ---[ end: if..providedByRel..else ]---			
+
+
+
+        } else if (((relObj1.parent.sys_class_name == serviceOffering) && (relObj1.parent.service_classification == 'Business Service')) && (relObj1.child.sys_class_name == applicationService)) {
+            // ---[ analyze relationship: business service offering --Depends on::Used by-> application service ]---
+
+            logObj1.u_notes += '\n > analyze relationship: business service offering --Depends on::Used by-> application service';
+            logObj1.u_appliedrule = 'business service offering --Depends on::Used by-> application service';
+
+            var tempObj5 = new GlideRecord("service_offering");
+            tempObj5.addQuery("sys_id", parent);
+            tempObj5.query();
+            if (tempObj5.next()) {
+                if (tempObj5.parent) logObj1.u_notes += '\n > business Service Offering:  ' + relObj1.parent.name + '  has a Service Offering Parent of:  ' + tempObj5.parent.name;
+            }
+
+            if (relObj1.type.name == dependsOnRel) {
+                // ---[ correct relationship ]---
+
+                if (createSysLogs) gs.info(myLogSource + 'Correct Relationship [business service offering --Depends on::Used by-> application service] :: Parent: ' + relObj1.parent.name + ' :: Parent Class: ' + relObj1.parent.sys_class_name + ' :: Child: ' + relObj1.child.name + ' :: Child Class: ' + relObj1.child.sys_class_name + ' :: Relationship Type: ' + relObj1.type.name);
+
+                logObj1.u_relationshiperror = false;
+
+
+            } else {
+                // ---[ Incorrect relationship ]---
+
+                if (createSysLogs) gs.info(myLogSource + 'Incorrect Relationship [business service offering --Depends on::Used by-> application service] :: Parent: ' + relObj1.parent.name + ' :: Parent Class: ' + relObj1.parent.sys_class_name + ' :: Child: ' + relObj1.child.name + ' :: Child Class: ' + relObj1.child.sys_class_name + ' :: Relationship Type: ' + relObj1.type.name);
+
+                logObj1.u_relationshiperror = true;
+
+
+            } // ---[ end: if..providedByRel..else ]---			
+
+
+
+        } else if ((relObj1.parent.sys_class_name == application) && (relObj1.child.sys_class_name.indexOf('cmdb_ci') >= 0)) {
+            // ---[ analyze relationship: application --Runs on::Runs-> infrastructure ci's ]---
+
+            logObj1.u_notes += '\n > analyze relationship: application --Runs on::Runs-> infrastructure cis ';
+            logObj1.u_appliedrule = 'application  --Runs on::Runs-> infrastructure cis';
+
+            if (relObj1.type.name == runsOnRel) {
+                // ---[ correct relationship ]---
+
+                if (createSysLogs) gs.info(myLogSource + 'Correct Relationship [application --Runs on::Runs-> infrastructure cis] :: Parent: ' + relObj1.parent.name + ' :: Parent Class: ' + relObj1.parent.sys_class_name + ' :: Child: ' + relObj1.child.name + ' :: Child Class: ' + relObj1.child.sys_class_name + ' :: Relationship Type: ' + relObj1.type.name);
+
+                logObj1.u_relationshiperror = false;
+
+
+            } else {
+                // ---[ Incorrect relationship ]---
+
+                if (createSysLogs) gs.info(myLogSource + 'Incorrect Relationship [application --Runs on::Runs-> infrastructure cis] :: Parent: ' + relObj1.parent.name + ' :: Parent Class: ' + relObj1.parent.sys_class_name + ' :: Child: ' + relObj1.child.name + ' :: Child Class: ' + relObj1.child.sys_class_name + ' :: Relationship Type: ' + relObj1.type.name);
+
+                logObj1.u_relationshiperror = true;
+
+
+            } // ---[ end: if..providedByRel..else ]---			
+
+
+
+        } else if (((relObj1.parent.sys_class_name == serviceOffering) && (relObj1.parent.service_classification == 'Technical Service')) && (relObj1.child.sys_class_name.indexOf('cmdb_ci') >= 0)) {
+            // ---[ analyze relationship: techncial service offering --Contains::Contained by->  infrastructure ci's ]---
+
+
+            logObj1.u_notes += '\n > analyze relationship: techncial service offering --Contains::Contained by->  infrastructure cis';
+            logObj1.u_appliedrule = 'techncial service offering --Contains::Contained by->  infrastructure cis';
+
+            var tempObj4 = new GlideRecord("service_offering");
+            tempObj4.addQuery("sys_id", parent);
+            tempObj4.query();
+            if (tempObj4.next()) {
+                if (tempObj4.parent) logObj1.u_notes += '\n > Technical Service Offering:  ' + relObj1.parent.name + '  has a Service Offering Parent of:  ' + tempObj4.parent.name;
+            }
+
+
+            if (relObj1.type.name == containsRel) {
+                // ---[ correct relationship ]---
+
+                if (createSysLogs) gs.info(myLogSource + 'Correct Relationship [techncial service offering --Contains::Contained by->  infrastructure cis] :: Parent: ' + relObj1.parent.name + ' :: Parent Class: ' + relObj1.parent.sys_class_name + ' :: Child: ' + relObj1.child.name + ' :: Child Class: ' + relObj1.child.sys_class_name + ' :: Relationship Type: ' + relObj1.type.name);
+
+                logObj1.u_relationshiperror = false;
+
+
+            } else {
+                // ---[ Incorrect relationship ]---
+
+                if (createSysLogs) gs.info(myLogSource + 'Incorrect Relationship [techncial service offering --Contains::Contained by->  infrastructure cis] :: Parent: ' + relObj1.parent.name + ' :: Parent Class: ' + relObj1.parent.sys_class_name + ' :: Child: ' + relObj1.child.name + ' :: Child Class: ' + relObj1.child.sys_class_name + ' :: Relationship Type: ' + relObj1.type.name);
+
+                logObj1.u_relationshiperror = true;
+
+
+            } // ---[ end: if..providedByRel..else ]---			
+
+
+
+        } else {
+            // ---[ unknown error ]---
+            if (createSysLogs) gs.info(myLogSource + 'ERROR - Unknown Relationship ::  Parent: ' + relObj1.parent.name + ' :: Parent Class: ' + relObj1.parent.sys_class_name + ' :: Child: ' + relObj1.child.name + ' :: Child Class: ' + relObj1.child.sys_class_name + ' :: Relationship Type: ' + relObj1.type.name);
+
+
+            logObj1.u_appliedrule = 'WARNING:: No Rule Found';
+
+
+            logObj1.u_notes += '\n > analyze relationship: WARNING - Unknown Relationship';
+            logObj1.u_relationshiperror = true;
+
+            /* -----
+			.u_parent = string 100;
+.u_parentclass = string 100;
+.u_child = string 100;
+.u_childclass = string 100;
+.u_relationship = string 100;
+			----- */
+
+
+        }
+
+
+        // ---[ end: relationship check ]---------------------------------------------------^
+
+        logObj1.u_analysissequence = myAnalysisSequence++;
+        logObj1.insert();
+        logObj1 = null;
+
+        // ---[ recursive call ]---
+        myNotes = 'analyze next level';
+        validateRelatiohship(relObj1.child.sys_id, myLogSource, myNotes);
+
+    } // ---[ end: while..relObj1 ]---
+    relObj1 = null;
+
+
+
+    if ((!foundRecord) && (myNotes != 'analyze next level')) {
+
+        var tmpObj1 = new GlideRecord("cmdb_ci");
+        tmpObj1.addQuery("sys_id", parent);
+        tmpObj1.query();
+        tmpObj1.next();
+
+        logObj1 = new GlideRecord(myLogTable);
+        logObj1.initialize();
+        logObj1.u_source = myLogSource;
+        logObj1.u_relationshiperror = true;
+
+        if (myLogSource.indexOf('BusApplicationRelationshipAnalysis') >= 0) {
+            // ---[ business application ]---
+            logObj1.u_notes = 'WARNING: Business Application ' + tmpObj1.name + ' has no cmdb_rel_ci Relationship Record';
+
+        } else if (myLogSource.indexOf('BusCapabilityRelationshipAnalysis') >= 0) {
+            // ---[ business capability ]---
+
+            logObj1.u_notes = 'WARNING: Business Capability: ' + tmpObj1.name + ' :: sys_id: ' + tmpObj1.sys_id + '    has no cmdb_rel_ci Relationship Record';
+            logObj1.u_buscap_leafnode = tmpObj1.leaf_node;
+            //logObj1.u_buscap_level = tmpObj1.hierarchy_level;
+            //if (tmpObj1.parent.name) logObj1.u_buscap_parent = tmpObj1.parent.name;
+
+        } else {
+            // ---[ dunno ]---
+            logObj1.u_notes = 'WARNING:: no cmdb_rel_ci Relationship record for: ' + tmpObj1.name;
+        }
+
+        logObj1.u_analysissequence = myAnalysisSequence++;
+        logObj1.insert();
+
+        logObj1 = null;
+        tmpObj1 = null;
+
+    }
+
+
+
+} // ---[ end: function..validateRelatiohship ]---
+// ===========================================================================^
+
+
+
+
+
+
+// ===========================================================================V
+function analyzeRelConnections() {
+
+    var myLogSource = '[SI:apmdemo]analyzeRelationshipConnections: ';
+
+
+    // ---[ parse relationship ]---
+    var relObj2 = new GlideRecord("cmdb_rel_ci");
+    relObj2.query();
+    while (relObj2.next()) {
+
+        var logObj1 = new GlideRecord(myLogTable);
+        logObj1.initialize();
+        logObj1.u_parent = relObj2.parent.name;
+        logObj1.u_parentclass = relObj2.parent.sys_class_name;
+        logObj1.u_child = relObj2.child.name;
+        logObj1.u_childclass = relObj2.child.sys_class_name;
+        logObj1.u_relationship = relObj2.type.name;
+        logObj1.u_source = myLogSource;
+        logObj1.u_notes = 'Connection Analysis: cmdb_rel_ci';
+
+        if (createSysLogs) gs.info(myLogSource + 'Parent: ' + relObj2.parent.name + ' :: Parent Class: ' + relObj2.parent.sys_class_name + ' :: Child: ' + relObj2.child.name + ' :: Child Class: ' + relObj2.child.sys_class_name + ' :: Relationship Type: ' + relObj2.type.name);
+
+
+        // ---[ begin: relationship connection check ]--------------------------------------------------V
+
+        if (relObj2.parent.sys_class_name == businessCapability) {
+            // ---[ analyze connections: business capabilities ]---
+
+            logObj1.u_appliedrule = '[Business Capability] business capability <can have a relationship with>  business application, business service';
+
+
+            if (!arrayUtil.contains(busCapConnections, relObj2.child.sys_class_name)) {
+                // ---[ Error in connection]---
+
+                if (createSysLogs) gs.info(myLogSource + 'Error - Relationship Connection :: Parent: ' + relObj2.parent.name + ' :: Parent Class: ' + relObj2.parent.sys_class_name + ' :: Child: ' + relObj2.child.name + ' :: Child Class: ' + relObj2.child.sys_class_name + ' :: Relationship Type: ' + relObj2.type.name);
+
+                logObj1.u_connectionerror = true;
+
+
+            } else {
+                // ---[ valid connection ]---
+
+                if (createSysLogs) gs.info(myLogSource + 'Correct - Relationship Connection :: Parent: ' + relObj2.parent.name + ' :: Parent Class: ' + relObj2.parent.sys_class_name + ' :: Child: ' + relObj2.child.name + ' :: Child Class: ' + relObj2.child.sys_class_name + ' :: Relationship Type: ' + relObj2.type.name);
+
+                logObj1.u_connectionerror = false;
+
+            }
+
+
+        } else if (relObj2.parent.sys_class_name == businessApplication) {
+            // ---[ analyze connections: business application ]---
+
+            logObj1.u_appliedrule = '[Business Application] business application <can have a relationship with>  business application, business capability, information object, application service';
+
+
+            if (!arrayUtil.contains(busAppConnections, relObj2.child.sys_class_name)) {
+                // ---[ Error in connection]
+
+                if (createSysLogs) gs.info(myLogSource + 'Error - Relationship Connection :: Parent: ' + relObj2.parent.name + ' :: Parent Class: ' + relObj2.parent.sys_class_name + ' :: Child: ' + relObj2.child.name + ' :: Child Class: ' + relObj2.child.sys_class_name + ' :: Relationship Type: ' + relObj2.type.name);
+
+                logObj1.u_connectionerror = true;
+
+            } else {
+                // ---[ valid connection ]---
+
+                if (createSysLogs) gs.info(myLogSource + 'Correct - Relationship Connection :: Parent: ' + relObj2.parent.name + ' :: Parent Class: ' + relObj2.parent.sys_class_name + ' :: Child: ' + relObj2.child.name + ' :: Child Class: ' + relObj2.child.sys_class_name + ' :: Relationship Type: ' + relObj2.type.name);
+
+                logObj1.u_connectionerror = false;
+
+            }
+
+
+        } else if (relObj2.parent.sys_class_name == informationObject) {
+            // ---[ analyze connections: business application ]---
+
+            logObj1.u_appliedrule = '[Information Object] information object <can have a relationship with>  business application';
+
+
+            if (createSysLogs) gs.info(myLogSource + 'Error - Relationship Connection - There should be no Child relations for Information Object :: Parent: ' + relObj2.parent.name + ' :: Parent Class: ' + relObj2.parent.sys_class_name + ' :: Child: ' + relObj2.child.name + ' :: Child Class: ' + relObj2.child.sys_class_name + ' :: Relationship Type: ' + relObj2.type.name);
+
+            logObj1.u_connectionerror = true;
+
+
+        } else if (relObj2.parent.sys_class_name == applicationService) {
+            // ---[ analyze connections: application service ]---
+
+            logObj1.u_appliedrule = '[Application Service] application service <can have a relationship with>  business application, service offering, application';
+
+
+            if (!arrayUtil.contains(appSvcConnections, relObj2.child.sys_class_name)) {
+                // ---[ Error in connection]
+
+                if (createSysLogs) gs.info(myLogSource + 'Error - Relationship Connection :: Parent: ' + relObj2.parent.name + ' :: Parent Class: ' + relObj2.parent.sys_class_name + ' :: Child: ' + relObj2.child.name + ' :: Child Class: ' + relObj2.child.sys_class_name + ' :: Relationship Type: ' + relObj2.type.name);
+
+                logObj1.u_connectionerror = true;
+
+            } else {
+                // ---[ valid connection ]---
+
+                if (createSysLogs) gs.info(myLogSource + 'Correct - Relationship Connection :: Parent: ' + relObj2.parent.name + ' :: Parent Class: ' + relObj2.parent.sys_class_name + ' :: Child: ' + relObj2.child.name + ' :: Child Class: ' + relObj2.child.sys_class_name + ' :: Relationship Type: ' + relObj2.type.name);
+
+                logObj1.u_connectionerror = false;
+
+            }
+
+
+        } else if (relObj2.parent.sys_class_name == serviceOffering) {
+            // ---[ analyze connections: service offering  ]---
+
+            logObj1.u_appliedrule = '[Service Offering] service offering <can have a relationship with>  application service, service';
+
+
+            if (!arrayUtil.contains(svcOffConnections, relObj2.child.sys_class_name)) {
+                // ---[ Error in connection]
+
+                if (createSysLogs) gs.info(myLogSource + 'Error - Relationship Connection :: Parent: ' + relObj2.parent.name + ' :: Parent Class: ' + relObj2.parent.sys_class_name + ' :: Child: ' + relObj2.child.name + ' :: Child Class: ' + relObj2.child.sys_class_name + ' :: Relationship Type: ' + relObj2.type.name);
+
+                logObj1.u_connectionerror = true;
+
+            } else {
+                // ---[ valid connection ]---
+
+                if (createSysLogs) gs.info(myLogSource + 'Correct - Relationship Connection :: Parent: ' + relObj2.parent.name + ' :: Parent Class: ' + relObj2.parent.sys_class_name + ' :: Child: ' + relObj2.child.name + ' :: Child Class: ' + relObj2.child.sys_class_name + ' :: Relationship Type: ' + relObj2.type.name);
+
+                logObj1.u_connectionerror = false;
+
+            }
+
+
+        } else if (relObj2.parent.sys_class_name == service) {
+            // ---[ analyze connections: service  ]---
+
+            logObj1.u_appliedrule = '[Service] service <can have a relationship with>  service offering';
+
+
+            if (!arrayUtil.contains(SvcConnections, relObj2.child.sys_class_name)) {
+                // ---[ Error in connection]
+
+                if (createSysLogs) gs.info(myLogSource + 'Error - Relationship Connection :: Parent: ' + relObj2.parent.name + ' :: Parent Class: ' + relObj2.parent.sys_class_name + ' :: Child: ' + relObj2.child.name + ' :: Child Class: ' + relObj2.child.sys_class_name + ' :: Relationship Type: ' + relObj2.type.name);
+
+                logObj1.u_connectionerror = true;
+
+            } else {
+                // ---[ valid connection ]---
+
+                if (createSysLogs) gs.info(myLogSource + 'Correct - Relationship Connection :: Parent: ' + relObj2.parent.name + ' :: Parent Class: ' + relObj2.parent.sys_class_name + ' :: Child: ' + relObj2.child.name + ' :: Child Class: ' + relObj2.child.sys_class_name + ' :: Relationship Type: ' + relObj2.type.name);
+
+                logObj1.u_connectionerror = false;
+
+            }
+
+
+        } else {
+            // ---[ error: cannot identify connection ]---
+
+            logObj1.u_appliedrule = 'WARNING:: No Rule Found';
+
+            logObj1.u_notes += '\n > analyze relationship: WARNING - Uknown Relationship';
+            logObj1.u_connectionerror = true;
+
+        }
+
+
+        // ---[ end: relationship connection check ]---------------------------------------------------^
+
+
+        logObj1.u_analysissequence = myAnalysisSequence++;
+        logObj1.insert();
+        logObj1 = null;
+
+
+    } // ---[ end: while..relObj2 ]---
+
+} // ---[ end: function..analyzeRelConnections]
+// ===========================================================================^]]></script>
+        <sys_class_name>sys_script_include</sys_class_name>
+        <sys_created_by>ekester</sys_created_by>
+        <sys_created_on>2020-04-25 23:12:01</sys_created_on>
+        <sys_id>3f2fa89fdb94d4506d6f1a4813961916</sys_id>
+        <sys_mod_count>53</sys_mod_count>
+        <sys_name>stackCrawler_v1</sys_name>
+        <sys_package display_value="APMDemo" source="x_snc_apmdemo">736b201fdb94d4506d6f1a4813961902</sys_package>
+        <sys_policy>read</sys_policy>
+        <sys_scope display_value="APMDemo">736b201fdb94d4506d6f1a4813961902</sys_scope>
+        <sys_update_name>sys_script_include_3f2fa89fdb94d4506d6f1a4813961916</sys_update_name>
+        <sys_updated_by>ekester</sys_updated_by>
+        <sys_updated_on>2020-04-27 11:58:04</sys_updated_on>
+    </sys_script_include>
+</record_update>

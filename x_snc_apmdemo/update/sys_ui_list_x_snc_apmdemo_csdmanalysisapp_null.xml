@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update>
+    <sys_ui_list parent="" relationship="" sys_domain="global" table="x_snc_apmdemo_csdmanalysisapp" version="2" view="">
+        <sys_ui_list_element action="INSERT_OR_UPDATE">
+            <average_value>false</average_value>
+            <element>u_analysissequence</element>
+            <list_id display_value="x_snc_apmdemo_csdmanalysisapp" element="NULL" name="x_snc_apmdemo_csdmanalysisapp" parent="NULL" relationship="NULL" sys_domain="global" view="Default view">f85e04e3db9cd4506d6f1a4813961939</list_id>
+            <max_value>false</max_value>
+            <min_value>false</min_value>
+            <position>0</position>
+            <sum>false</sum>
+            <sys_created_by>ekester</sys_created_by>
+            <sys_created_on>2020-04-26 15:26:38</sys_created_on>
+            <sys_id>fc5e04e3db9cd4506d6f1a481396193a</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_updated_by>ekester</sys_updated_by>
+            <sys_updated_on>2020-04-26 15:26:38</sys_updated_on>
+        </sys_ui_list_element>
+        <sys_ui_list_element action="INSERT_OR_UPDATE">
+            <average_value>false</average_value>
+            <element>u_appliedrule</element>
+            <list_id display_value="x_snc_apmdemo_csdmanalysisapp" element="NULL" name="x_snc_apmdemo_csdmanalysisapp" parent="NULL" relationship="NULL" sys_domain="global" view="Default view">f85e04e3db9cd4506d6f1a4813961939</list_id>
+            <max_value>false</max_value>
+            <min_value>false</min_value>
+            <position>1</position>
+            <sum>false</sum>
+            <sys_created_by>ekester</sys_created_by>
+            <sys_created_on>2020-04-26 15:26:38</sys_created_on>
+            <sys_id>745e04e3db9cd4506d6f1a481396193b</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_updated_by>ekester</sys_updated_by>
+            <sys_updated_on>2020-04-26 15:26:38</sys_updated_on>
+        </sys_ui_list_element>
+        <sys_ui_list_element action="INSERT_OR_UPDATE">
+            <average_value>false</average_value>
+            <element>u_buscap_leafnode</element>
+            <list_id display_value="x_snc_apmdemo_csdmanalysisapp" element="NULL" name="x_snc_apmdemo_csdmanalysisapp" parent="NULL" relationship="NULL" sys_domain="global" view="Default view">f85e04e3db9cd4506d6f1a4813961939</list_id>
+            <max_value>false</max_value>
+            <min_value>false</min_value>
+            <position>2</position>
+            <sum>false</sum>
+            <sys_created_by>ekester</sys_created_by>
+            <sys_created_on>2020-04-26 15:26:38</sys_created_on>
+            <sys_id>f45e04e3db9cd4506d6f1a481396193b</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_updated_by>ekester</sys_updated_by>
+            <sys_updated_on>2020-04-26 15:26:38</sys_updated_on>
+        </sys_ui_list_element>
+        <sys_ui_list_element action="INSERT_OR_UPDATE">
+            <average_value>false</average_value>
+            <element>u_buscap_level</element>
+            <list_id display_value="x_snc_apmdemo_csdmanalysisapp" element="NULL" name="x_snc_apmdemo_csdmanalysisapp" parent="NULL" relationship="NULL" sys_domain="global" view="Default view">f85e04e3db9cd4506d6f1a4813961939</list_id>
+            <max_value>false</max_value>
+            <min_value>false</min_value>
+            <position>3</position>
+            <sum>false</sum>
+            <sys_created_by>ekester</sys_created_by>
+            <sys_created_on>2020-04-26 15:26:38</sys_created_on>
+            <sys_id>785e04e3db9cd4506d6f1a481396193b</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_updated_by>ekester</sys_updated_by>
+            <sys_updated_on>2020-04-26 15:26:38</sys_updated_on>
+        </sys_ui_list_element>
+        <sys_ui_list_element action="INSERT_OR_UPDATE">
+            <average_value>false</average_value>
+            <element>u_buscap_parent</element>
+            <list_id display_value="x_snc_apmdemo_csdmanalysisapp" element="NULL" name="x_snc_apmdemo_csdmanalysisapp" parent="NULL" relationship="NULL" sys_domain="global" view="Default view">f85e04e3db9cd4506d6f1a4813961939</list_id>
+            <max_value>false</max_value>
+            <min_value>false</min_value>
+            <position>4</position>
+            <sum>false</sum>
+            <sys_created_by>ekester</sys_created_by>
+            <sys_created_on>2020-04-26 15:26:38</sys_created_on>
+            <sys_id>f85e04e3db9cd4506d6f1a481396193b</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_updated_by>ekester</sys_updated_by>
+            <sys_updated_on>2020-04-26 15:26:38</sys_updated_on>
+        </sys_ui_list_element>
+        <sys_ui_list_element action="INSERT_OR_UPDATE">
+            <average_value>false</average_value>
+            <element>u_child</element>
+            <list_id display_value="x_snc_apmdemo_csdmanalysisapp" element="NULL" name="x_snc_apmdemo_csdmanalysisapp" parent="NULL" relationship="NULL" sys_domain="global" view="Default view">f85e04e3db9cd4506d6f1a4813961939</list_id>
+            <max_value>false</max_value>
+            <min_value>false</min_value>
+            <position>5</position>
+            <sum>false</sum>
+            <sys_created_by>ekester</sys_created_by>
+            <sys_created_on>2020-04-26 15:26:38</sys_created_on>
+            <sys_id>7c5e04e3db9cd4506d6f1a481396193b</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_updated_by>ekester</sys_updated_by>
+            <sys_updated_on>2020-04-26 15:26:38</sys_updated_on>
+        </sys_ui_list_element>
+        <sys_ui_list_element action="INSERT_OR_UPDATE">
+            <average_value>false</average_value>
+            <element>u_childclass</element>
+            <list_id display_value="x_snc_apmdemo_csdmanalysisapp" element="NULL" name="x_snc_apmdemo_csdmanalysisapp" parent="NULL" relationship="NULL" sys_domain="global" view="Default view">f85e04e3db9cd4506d6f1a4813961939</list_id>
+            <max_value>false</max_value>
+            <min_value>false</min_value>
+            <position>6</position>
+            <sum>false</sum>
+            <sys_created_by>ekester</sys_created_by>
+            <sys_created_on>2020-04-26 15:26:38</sys_created_on>
+            <sys_id>fc5e04e3db9cd4506d6f1a481396193b</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_updated_by>ekester</sys_updated_by>
+            <sys_updated_on>2020-04-26 15:26:38</sys_updated_on>
+        </sys_ui_list_element>
+        <sys_ui_list_element action="INSERT_OR_UPDATE">
+            <average_value>false</average_value>
+            <element>u_connectionerror</element>
+            <list_id display_value="x_snc_apmdemo_csdmanalysisapp" element="NULL" name="x_snc_apmdemo_csdmanalysisapp" parent="NULL" relationship="NULL" sys_domain="global" view="Default view">f85e04e3db9cd4506d6f1a4813961939</list_id>
+            <max_value>false</max_value>
+            <min_value>false</min_value>
+            <position>7</position>
+            <sum>false</sum>
+            <sys_created_by>ekester</sys_created_by>
+            <sys_created_on>2020-04-26 15:26:38</sys_created_on>
+            <sys_id>705e04e3db9cd4506d6f1a481396193c</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_updated_by>ekester</sys_updated_by>
+            <sys_updated_on>2020-04-26 15:26:38</sys_updated_on>
+        </sys_ui_list_element>
+        <sys_ui_list_element action="INSERT_OR_UPDATE">
+            <average_value>false</average_value>
+            <element>u_notes</element>
+            <list_id display_value="x_snc_apmdemo_csdmanalysisapp" element="NULL" name="x_snc_apmdemo_csdmanalysisapp" parent="NULL" relationship="NULL" sys_domain="global" view="Default view">f85e04e3db9cd4506d6f1a4813961939</list_id>
+            <max_value>false</max_value>
+            <min_value>false</min_value>
+            <position>8</position>
+            <sum>false</sum>
+            <sys_created_by>ekester</sys_created_by>
+            <sys_created_on>2020-04-26 15:26:38</sys_created_on>
+            <sys_id>f05e04e3db9cd4506d6f1a481396193c</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_updated_by>ekester</sys_updated_by>
+            <sys_updated_on>2020-04-26 15:26:38</sys_updated_on>
+        </sys_ui_list_element>
+        <sys_ui_list_element action="INSERT_OR_UPDATE">
+            <average_value>false</average_value>
+            <element>u_parent</element>
+            <list_id display_value="x_snc_apmdemo_csdmanalysisapp" element="NULL" name="x_snc_apmdemo_csdmanalysisapp" parent="NULL" relationship="NULL" sys_domain="global" view="Default view">f85e04e3db9cd4506d6f1a4813961939</list_id>
+            <max_value>false</max_value>
+            <min_value>false</min_value>
+            <position>9</position>
+            <sum>false</sum>
+            <sys_created_by>ekester</sys_created_by>
+            <sys_created_on>2020-04-26 15:26:38</sys_created_on>
+            <sys_id>745e04e3db9cd4506d6f1a481396193c</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_updated_by>ekester</sys_updated_by>
+            <sys_updated_on>2020-04-26 15:26:38</sys_updated_on>
+        </sys_ui_list_element>
+        <sys_ui_list action="INSERT_OR_UPDATE">
+            <average_value>false</average_value>
+            <element/>
+            <max_value>false</max_value>
+            <min_value>false</min_value>
+            <name>x_snc_apmdemo_csdmanalysisapp</name>
+            <parent/>
+            <position/>
+            <relationship/>
+            <sum>false</sum>
+            <sys_class_name>sys_ui_list</sys_class_name>
+            <sys_created_by>ekester</sys_created_by>
+            <sys_created_on>2020-04-26 15:26:38</sys_created_on>
+            <sys_domain>global</sys_domain>
+            <sys_domain_path>/</sys_domain_path>
+            <sys_id>f85e04e3db9cd4506d6f1a4813961939</sys_id>
+            <sys_mod_count>0</sys_mod_count>
+            <sys_name>x_snc_apmdemo_csdmanalysisapp</sys_name>
+            <sys_package display_value="APMDemo" source="x_snc_apmdemo">736b201fdb94d4506d6f1a4813961902</sys_package>
+            <sys_policy/>
+            <sys_scope display_value="APMDemo">736b201fdb94d4506d6f1a4813961902</sys_scope>
+            <sys_update_name>sys_ui_list_x_snc_apmdemo_csdmanalysisapp_null</sys_update_name>
+            <sys_updated_by>ekester</sys_updated_by>
+            <sys_updated_on>2020-04-26 15:26:38</sys_updated_on>
+            <sys_user/>
+            <view display_value="Default view" name="NULL">Default view</view>
+            <view_name/>
+        </sys_ui_list>
+    </sys_ui_list>
+</record_update>
