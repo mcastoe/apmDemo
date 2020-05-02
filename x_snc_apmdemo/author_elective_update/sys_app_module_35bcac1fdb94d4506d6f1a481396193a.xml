@@ -66,7 +66,7 @@
         <update_guid_history>75bcac1f1f94d4507a3ca3d36564743b:1872288597</update_guid_history>
     </sys_update_version>
     <sys_metadata_delete action="INSERT_OR_UPDATE">
-        <sys_audit_delete display_value="Create New">9beea49fdb94d4506d6f1a4813961968</sys_audit_delete>
+        <sys_audit_delete display_value="">9beea49fdb94d4506d6f1a4813961968</sys_audit_delete>
         <sys_class_name>sys_metadata_delete</sys_class_name>
         <sys_created_by>ekester</sys_created_by>
         <sys_created_on>2020-04-25 23:10:35</sys_created_on>

@@ -100,6 +100,7 @@ ciBusinessAssociations_vs2.prototype = {
         myOrigCISysid = '';
         myOrigCIName = '';
         myOrigTicketNumber = '';
+        myOngoingNotes = '';
 
 
 
@@ -130,10 +131,6 @@ ciBusinessAssociations_vs2.prototype = {
 		Theme – Visibility via power of the platform
 		Full Stack Incident/Problem Reporting: Create Indicator that counts Incidents/Problem targeting infrastructure CI will associated anywhere in the "Application Stack". That is from the server/db whatever, the incident count is rolled up to the Application Service(s) and then up to the Business Application. This/these indicators are valuable themselves but also roll into a higher level indicator for Technical Condition (higher number of INC/PRB is a detractor)
 		----------------------------- */
-
-
-
-
 
         var myIncObj1 = new GlideRecord("incident");
         if (myCIID != '') myIncObj1.addQuery('cmdb_ci', myCIID);
@@ -178,16 +175,20 @@ ciBusinessAssociations_vs2.prototype = {
 
 
         // ---[ get and save original ci ]---
-        if (myOrigCISysid == '') {
-            var getCIObj1 = new GlideRecord("cmdb_ci");
-            getCIObj1.addQuery("sys_id", myChildID);
-            getCIObj1.query();
-            if (getCIObj1.next()) {
-                myOrigCISysid = getCIObj1.sys_id.toString();
-                myOrigCIName = getCIObj1.name.toString();
+        var getCIObj1 = new GlideRecord("cmdb_ci");
+        getCIObj1.addQuery("sys_id", myChildID);
+        getCIObj1.query();
+        if (getCIObj1.next()) {
+            if (myOrigCISysid == '') myOrigCISysid = getCIObj1.sys_id.toString();
+            if (myOrigCISysid == '') myOrigCIName = getCIObj1.name.toString();
+            if (myOngoingNotes == '') {
+                myOngoingNotes = '[CI Relationship Stack] ' + getCIObj1.name.toString();
+            } else {
+                myOngoingNotes += ' > ' + getCIObj1.name.toString();
             }
-            getCIObj1 = null;
         }
+        getCIObj1 = null;
+
 
 
         var myRelObj1 = new GlideRecord("cmdb_rel_ci");
@@ -195,13 +196,13 @@ ciBusinessAssociations_vs2.prototype = {
         myRelObj1.query();
         while (myRelObj1.next()) {
 
-            if ((logObj1 == null) || ((logObj1 == ''))) {
+
+            if (logObj1 == '') {
                 logObj1 = new GlideRecord(myLogTable);
                 logObj1.initialize();
                 logObj1.u_analysissequence = myAnalysisSequence++;
                 logObj1.u_source = myLogSource;
             }
-
 
             if (createSysLogs) gs.info(myLogSource + 'rel record sys_id: ' + myRelObj1.sys_id + ' :: Rel Parent sysid: ' + myRelObj1.parent.sys_id + ' :: Rel Parent name: ' + myRelObj1.parent.name + '  :: parent class: ' + myRelObj1.parent.sys_class_name + '  :: rel child name: ' + myRelObj1.child.name);
 
@@ -214,7 +215,8 @@ ciBusinessAssociations_vs2.prototype = {
                 logObj1.u_busapp_name = myRelObj1.parent.name;
                 //logObj1.u_busapp_sysid = myRelObj1.parent.sys_id;
                 logObj1.u_busapp_id = myRelObj1.parent.sys_id;
-            } else if (myRelObj1.parent.sys_class_name == applicationService) {
+            } else if ((myRelObj1.parent.sys_class_name == applicationService) || (myRelObj1.parent.sys_class_name == service)) {
+                // ---[ looking for either applicationService or service records and calling them cmdb_ci_service_discovered ]---
                 logObj1.u_appsvc_name = myRelObj1.parent.name;
                 logObj1.u_appsvc_id = myRelObj1.parent.sys_id;
             }
@@ -227,13 +229,13 @@ ciBusinessAssociations_vs2.prototype = {
             // ---[ recursive call ... crawling the rel stack ]---
             this.myParseRels(myRelObj1.parent.sys_id);
 
-            if ((logObj1 != '') && (logObj1 != null)) {
+            if (logObj1 != '') {
+                logObj1.u_notes = myOngoingNotes;
                 logObj1.insert();
-                logObj1 = null;
+                logObj1 = '';
             }
 
-
-        } // ---[ end: while..myRelObj1 ]---     
+        } // ---[ end: while..myRelObj1 ]---    
         myRelObj1 = null;
 
 
@@ -305,6 +307,7 @@ ciBusinessAssociations_vs2.prototype = {
 
         if ((foundAppSvc != '') && (foundServer != '')) {
             // ---[ there is a complete path ... no action ]---
+            myPathCreated = true;
             if (createSysLogs) gs.info(myLogSource + ' found complete path::   myOrigBusApp: ' + myOrigBusApp + '  :: foundAppSvc: ' + foundAppSvc + '   :: foundServer: ' + foundServer);
 
         } else if ((foundAppSvc == '') && (foundServer == '') && (!myPathCreated)) {
@@ -374,13 +377,13 @@ ciBusinessAssociations_vs2.prototype = {
         <sys_created_by>ekester</sys_created_by>
         <sys_created_on>2020-04-27 00:26:05</sys_created_on>
         <sys_id>cc990a67db9018506d6f1a48139619d1</sys_id>
-        <sys_mod_count>75</sys_mod_count>
+        <sys_mod_count>88</sys_mod_count>
         <sys_name>ciBusinessAssociations_vs2</sys_name>
         <sys_package display_value="APMDemo" source="x_snc_apmdemo">736b201fdb94d4506d6f1a4813961902</sys_package>
         <sys_policy>read</sys_policy>
         <sys_scope display_value="APMDemo">736b201fdb94d4506d6f1a4813961902</sys_scope>
         <sys_update_name>sys_script_include_cc990a67db9018506d6f1a48139619d1</sys_update_name>
-        <sys_updated_by>ekester</sys_updated_by>
-        <sys_updated_on>2020-04-30 22:57:42</sys_updated_on>
+        <sys_updated_by>ed.kester</sys_updated_by>
+        <sys_updated_on>2020-05-02 20:48:23</sys_updated_on>
     </sys_script_include>
 </record_update>

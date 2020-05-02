@@ -12,9 +12,10 @@ Written by Ed Kester [ServiceNow]
 This script is for analysis use only and is not maintained.
 ------------------------ */
 
-var myCITestSid = 'f3a48a320b203200dc03650d37673a98';
+//--var myCITestSid = 'f3a48a320b203200dc03650d37673a98'; from eds system
+var myCITestSid = '3a27d4370a0a0bb4006316812bf45439'; // PS Apache 01
 
-// ---[ send incident sys_id ]---
+// ---[ send incident sys_id and/or problem sys_id ]---
 var myReturnValue = new x_snc_apmdemo.ciBusinessAssociations_vs2().mySearchTickets(myCITestSid);
 
 // ---[ send ci sys_id ]---
@@ -25,14 +26,14 @@ var myReturnValue = new x_snc_apmdemo.ciBusinessAssociations_vs2().mySearchTicke
         <sys_created_by>ekester</sys_created_by>
         <sys_created_on>2020-04-26 18:18:41</sys_created_on>
         <sys_id>95b5f06bdbdcd4506d6f1a4813961995</sys_id>
-        <sys_mod_count>5</sys_mod_count>
+        <sys_mod_count>7</sys_mod_count>
         <sys_name>apmCIAssocFrontend</sys_name>
         <sys_package display_value="APMDemo" source="x_snc_apmdemo">736b201fdb94d4506d6f1a4813961902</sys_package>
         <sys_policy/>
         <sys_scope display_value="APMDemo">736b201fdb94d4506d6f1a4813961902</sys_scope>
         <sys_update_name>sys_script_fix_95b5f06bdbdcd4506d6f1a4813961995</sys_update_name>
-        <sys_updated_by>ekester</sys_updated_by>
-        <sys_updated_on>2020-04-27 11:37:25</sys_updated_on>
+        <sys_updated_by>mark.castoe</sys_updated_by>
+        <sys_updated_on>2020-05-01 12:04:29</sys_updated_on>
         <unloadable>false</unloadable>
     </sys_script_fix>
 </record_update>

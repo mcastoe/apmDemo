@@ -15,7 +15,12 @@
         <condition/>
         <description/>
         <execute_function>false</execute_function>
-        <filter_condition/>
+        <filter_condition table="change_request">cmdb_ci_business_appVALCHANGES^ORcmdb_ciVALCHANGES^cmdb_ci_business_appISNOTEMPTY^cmdb_ciISNOTEMPTY^EQ<item endquery="false" field="cmdb_ci_business_app" goto="false" newquery="false" operator="VALCHANGES" or="false" value=""/>
+            <item endquery="false" field="cmdb_ci" goto="false" newquery="false" operator="VALCHANGES" or="true" value=""/>
+            <item endquery="false" field="cmdb_ci_business_app" goto="false" newquery="false" operator="ISNOTEMPTY" or="false" value=""/>
+            <item endquery="false" field="cmdb_ci" goto="false" newquery="false" operator="ISNOTEMPTY" or="false" value=""/>
+            <item endquery="true" field="" goto="false" newquery="false" operator="=" or="false" value=""/>
+        </filter_condition>
         <is_rest>false</is_rest>
         <message/>
         <name>apmDemoAutomation</name>
@@ -41,15 +46,15 @@
         <sys_domain>global</sys_domain>
         <sys_domain_path>/</sys_domain_path>
         <sys_id>2d0ab254db6810106d6f1a481396197c</sys_id>
-        <sys_mod_count>10</sys_mod_count>
+        <sys_mod_count>12</sys_mod_count>
         <sys_name>apmDemoAutomation</sys_name>
         <sys_overrides/>
         <sys_package display_value="APMDemo" source="x_snc_apmdemo">736b201fdb94d4506d6f1a4813961902</sys_package>
         <sys_policy/>
         <sys_scope display_value="APMDemo">736b201fdb94d4506d6f1a4813961902</sys_scope>
         <sys_update_name>sys_script_2d0ab254db6810106d6f1a481396197c</sys_update_name>
-        <sys_updated_by>ekester</sys_updated_by>
-        <sys_updated_on>2020-04-30 14:34:25</sys_updated_on>
+        <sys_updated_by>ed.kester</sys_updated_by>
+        <sys_updated_on>2020-05-01 11:16:56</sys_updated_on>
         <template/>
         <when>after</when>
     </sys_script>
