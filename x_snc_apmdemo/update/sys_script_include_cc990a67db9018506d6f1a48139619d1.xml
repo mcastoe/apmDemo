@@ -89,6 +89,11 @@ ciBusinessAssociations_vs2.prototype = {
 
         foundAppSvc = '';
         foundServer = '';
+        foundAppSvcFlg = false;
+        foundBusCapFlg = false;
+        foundBusAppFlg = false;
+        recordCreated = false;
+
         myOrigBusApp = '';
         myPathCreated = false;
 
@@ -100,6 +105,7 @@ ciBusinessAssociations_vs2.prototype = {
         myOrigCISysid = '';
         myOrigCIName = '';
         myOrigTicketNumber = '';
+        myOrigTicketID = '';
         myOngoingNotes = '';
 
 
@@ -124,7 +130,7 @@ ciBusinessAssociations_vs2.prototype = {
 
 
 
-    mySearchTickets: function(myCIID) {
+    mySearchTickets: function(current) {
         // --- [begin: function..mySearchTickets ]-----------------------------------------------------------------------V
         /* ---------------------------
 		requirements:
@@ -132,37 +138,44 @@ ciBusinessAssociations_vs2.prototype = {
 		Full Stack Incident/Problem Reporting: Create Indicator that counts Incidents/Problem targeting infrastructure CI will associated anywhere in the "Application Stack". That is from the server/db whatever, the incident count is rolled up to the Application Service(s) and then up to the Business Application. This/these indicators are valuable themselves but also roll into a higher level indicator for Technical Condition (higher number of INC/PRB is a detractor)
 		----------------------------- */
 
+        /* -------------------------------
         var myIncObj1 = new GlideRecord("incident");
         if (myCIID != '') myIncObj1.addQuery('cmdb_ci', myCIID);
         myIncObj1.addQuery('cmdb_ci', '!=', '');
         myIncObj1.query();
         while (myIncObj1.next()) {
 
-            myOrigTicketNumber = myIncObj1.number.toString();
             if (createSysLogs) gs.info(myLogSource + 'incident: ' + myIncObj1.sys_id + ' :: cmdb_ci: ' + myIncObj1.cmdb_ci + ' :: incident number: ' + myIncObj1.number.toString());
 
-            this.myParseRels(myIncObj1.cmdb_ci);
+            this.myParseRels(myIncObj1.cmdb_ci, myIncObj1.sys_id);
 
         } // ---[ end: while..myIncObj1 ]---
         myIncObj1 = null;
+----------------------------------- */
 
 
-        myIncObj1 = new GlideRecord("problem");
-        if (myCIID != '') myIncObj1.addQuery('cmdb_ci', myCIID);
-        myIncObj1.addQuery('cmdb_ci', '!=', '');
-        myIncObj1.query();
-        while (myIncObj1.next()) {
+        var taskObj1 = new GlideRecord("task");
+        taskObj1.addQuery("sys_id", current.sys_id);
+        taskObj1.query();
+        if (taskObj1.next()) {
 
-            myOrigTicketNumber = myIncObj1.number.toString();
-            if (createSysLogs) gs.info(myLogSource + 'problem: ' + myIncObj1.sys_id + ' :: cmdb_ci: ' + myIncObj1.cmdb_ci + ' :: problem number: ' + myIncObj1.number.toString());
+            // ---[ see if adrepo record exists ]---
+            var adObj1 = new GlideRecord(myLogTable);
+            adObj1.addQuery("u_ticket_id", current.sys_id);
+            adObj1.addQuery("u_conf_item", current.cmdb_ci);
+            adObj1.query();
+            if (adObj1.next()) {
+                // ---[record already exists]---
+            } else {
+                // ---[ record doesn't exist ... create ]---
+                if (myOrigTicketNumber == '') myOrigTicketNumber = taskObj1.number.toString();
+                if (myOrigTicketID == '') myOrigTicketID = taskObj1.sys_id;
+                this.myParseRels(taskObj1.cmdb_ci, taskObj1.sys_id);
+            }
+            adObj1 = null;
 
-            this.myParseRels(myIncObj1.cmdb_ci);
-
-        } // ---[ end: while..myIncObj1 ]---
-        myIncObj1 = null;
-
-
-
+        }
+        taskObj1 = null;
 
         // --- [end: function..mySearchTickets ]-------------------------------------------------------------------------^
     },
@@ -170,17 +183,20 @@ ciBusinessAssociations_vs2.prototype = {
 
 
 
-    myParseRels: function(myChildID) {
+
+    myParseRels: function(myID, myTicketID) {
         // --- [begin: function..myParseRels ]-----------------------------------------------------------------------V
+        // ---[ BR call:   var myReturnValue = new x_snc_apmdemo.ciBusinessAssociations_vs2().mySearchTickets(current); ]---
+
 
 
         // ---[ get and save original ci ]---
         var getCIObj1 = new GlideRecord("cmdb_ci");
-        getCIObj1.addQuery("sys_id", myChildID);
+        getCIObj1.addQuery("sys_id", myID);
         getCIObj1.query();
         if (getCIObj1.next()) {
             if (myOrigCISysid == '') myOrigCISysid = getCIObj1.sys_id.toString();
-            if (myOrigCISysid == '') myOrigCIName = getCIObj1.name.toString();
+            if (myOrigCIName == '') myOrigCIName = getCIObj1.name.toString();
             if (myOngoingNotes == '') {
                 myOngoingNotes = '[CI Relationship Stack] ' + getCIObj1.name.toString();
             } else {
@@ -192,7 +208,7 @@ ciBusinessAssociations_vs2.prototype = {
 
 
         var myRelObj1 = new GlideRecord("cmdb_rel_ci");
-        myRelObj1.addQuery("child", myChildID);
+        myRelObj1.addQuery("child", myID);
         myRelObj1.query();
         while (myRelObj1.next()) {
 
@@ -208,15 +224,18 @@ ciBusinessAssociations_vs2.prototype = {
 
 
             if (myRelObj1.parent.sys_class_name == businessCapability) {
+                foundBusCapFlg = true;
                 logObj1.u_buscap_name = myRelObj1.parent.name;
                 //logObj1.u_buscap_sysid = myRelObj1.parent.sys_id;
                 logObj1.u_buscap_id = myRelObj1.parent.sys_id;
             } else if (myRelObj1.parent.sys_class_name == businessApplication) {
+                foundBusAppFlg = true;
                 logObj1.u_busapp_name = myRelObj1.parent.name;
                 //logObj1.u_busapp_sysid = myRelObj1.parent.sys_id;
                 logObj1.u_busapp_id = myRelObj1.parent.sys_id;
             } else if ((myRelObj1.parent.sys_class_name == applicationService) || (myRelObj1.parent.sys_class_name == service)) {
                 // ---[ looking for either applicationService or service records and calling them cmdb_ci_service_discovered ]---
+                foundAppSvcFlg = true;
                 logObj1.u_appsvc_name = myRelObj1.parent.name;
                 logObj1.u_appsvc_id = myRelObj1.parent.sys_id;
             }
@@ -224,12 +243,25 @@ ciBusinessAssociations_vs2.prototype = {
             logObj1.u_conf_item = myOrigCISysid;
             logObj1.u_ci_name = myOrigCIName;
             logObj1.u_incident_number = myOrigTicketNumber;
+            logObj1.u_ticket_id = myOrigTicketID;
 
 
             // ---[ recursive call ... crawling the rel stack ]---
             this.myParseRels(myRelObj1.parent.sys_id);
 
-            if (logObj1 != '') {
+
+            if (createSysLogs) gs.info(myLogSource + ' createADRepo:: logObj1: ' + logObj1 + ' :: foundBusAppFlg: ' + foundBusAppFlg + ' :: foundAppSvcFlg: ' + foundAppSvcFlg + ' :: recordCreated: ' + recordCreated);
+
+
+            /* ----------------------------------------
+            [logic] create only one ADRepo record IF:
+               >  business application ID exists
+               >  application service ID exists
+               >  configuration ID exists
+               >  ticket ID exists
+            ---------------------------------------- */
+            if ((logObj1 != '') && (foundBusAppFlg) && (foundAppSvcFlg) && (!recordCreated)) {
+                recordCreated = true;
                 logObj1.u_notes = myOngoingNotes;
                 logObj1.insert();
                 logObj1 = '';
@@ -377,13 +409,13 @@ ciBusinessAssociations_vs2.prototype = {
         <sys_created_by>ekester</sys_created_by>
         <sys_created_on>2020-04-27 00:26:05</sys_created_on>
         <sys_id>cc990a67db9018506d6f1a48139619d1</sys_id>
-        <sys_mod_count>88</sys_mod_count>
+        <sys_mod_count>104</sys_mod_count>
         <sys_name>ciBusinessAssociations_vs2</sys_name>
         <sys_package display_value="APMDemo" source="x_snc_apmdemo">736b201fdb94d4506d6f1a4813961902</sys_package>
         <sys_policy>read</sys_policy>
         <sys_scope display_value="APMDemo">736b201fdb94d4506d6f1a4813961902</sys_scope>
         <sys_update_name>sys_script_include_cc990a67db9018506d6f1a48139619d1</sys_update_name>
         <sys_updated_by>ed.kester</sys_updated_by>
-        <sys_updated_on>2020-05-02 20:48:23</sys_updated_on>
+        <sys_updated_on>2020-05-05 19:18:06</sys_updated_on>
     </sys_script_include>
 </record_update>

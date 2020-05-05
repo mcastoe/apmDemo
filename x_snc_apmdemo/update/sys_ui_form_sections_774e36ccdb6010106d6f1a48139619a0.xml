@@ -14,34 +14,6 @@
             <sys_updated_by>ekester</sys_updated_by>
             <sys_updated_on>2020-04-28 17:32:29</sys_updated_on>
         </sys_ui_form_section>
-        <sys_ui_form_section action="INSERT_OR_UPDATE">
-            <position>1</position>
-            <sys_created_by>ed.kester</sys_created_by>
-            <sys_created_on>2020-05-01 11:55:36</sys_created_on>
-            <sys_domain>global</sys_domain>
-            <sys_domain_path>/</sys_domain_path>
-            <sys_id>1afd8dc51b2c14100a90fdd2cd4bcb7e</sys_id>
-            <sys_mod_count>0</sys_mod_count>
-            <sys_overrides/>
-            <sys_ui_form display_value="x_snc_apmdemo_adrepo" name="x_snc_apmdemo_adrepo" sys_domain="global" view="Default view">774e36ccdb6010106d6f1a48139619a0</sys_ui_form>
-            <sys_ui_section caption="." display_value="." name="x_snc_apmdemo_adrepo" sys_domain="global" view="Default view">dafd8dc51b2c14100a90fdd2cd4bcb7c</sys_ui_section>
-            <sys_updated_by>ed.kester</sys_updated_by>
-            <sys_updated_on>2020-05-01 11:55:36</sys_updated_on>
-        </sys_ui_form_section>
-        <sys_ui_form_section action="INSERT_OR_UPDATE">
-            <position>2</position>
-            <sys_created_by>ed.kester</sys_created_by>
-            <sys_created_on>2020-05-01 11:55:37</sys_created_on>
-            <sys_domain>global</sys_domain>
-            <sys_domain_path>/</sys_domain_path>
-            <sys_id>16fd8dc51b2c14100a90fdd2cd4bcbfe</sys_id>
-            <sys_mod_count>0</sys_mod_count>
-            <sys_overrides/>
-            <sys_ui_form display_value="x_snc_apmdemo_adrepo" name="x_snc_apmdemo_adrepo" sys_domain="global" view="Default view">774e36ccdb6010106d6f1a48139619a0</sys_ui_form>
-            <sys_ui_section caption="." display_value="." name="x_snc_apmdemo_adrepo" sys_domain="global" view="Default view">d2fd8dc51b2c14100a90fdd2cd4bcb7d</sys_ui_section>
-            <sys_updated_by>ed.kester</sys_updated_by>
-            <sys_updated_on>2020-05-01 11:55:37</sys_updated_on>
-        </sys_ui_form_section>
         <sys_ui_form action="INSERT_OR_UPDATE">
             <name>x_snc_apmdemo_adrepo</name>
             <roles/>
