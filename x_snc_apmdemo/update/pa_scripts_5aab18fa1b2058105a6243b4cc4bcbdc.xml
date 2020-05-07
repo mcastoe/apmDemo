@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update sys_domain="global" table="pa_scripts">
+    <pa_scripts action="INSERT_OR_UPDATE">
+        <arguments>cmdb_ci</arguments>
+        <description/>
+        <name>Get Business Applications from Change CI</name>
+        <script><![CDATA[var adrepo=new GlideRecord('x_snc_apmdemo_adrepo');
+adrepo.addQuery('u_conf_item',current.cmdb_ci.sys_id);
+adrepo.query();
+var baList='';
+while (adrepo.next()) {
+	
+	if (baList=='') {
+		
+		baList=adrepo.u_busapp_id.sys_id;
+		
+	} else {
+		
+		if (baList.indexOf(adrepo.u_busapp_id.sys_id) < 0) {
+			
+			baList += ',' + adrepo.u_busapp_id.sys_id;
+		
+		}
+		
+	}
+	
+}
+//gs.log('RIA: ' + current.cmdb_ci.getDisplayValue() + ' ' + baList);
+baList.split(',');]]></script>
+        <sys_class_name>pa_scripts</sys_class_name>
+        <sys_created_by>russell.ackerman</sys_created_by>
+        <sys_created_on>2020-05-06 18:45:09</sys_created_on>
+        <sys_domain>global</sys_domain>
+        <sys_domain_path>/</sys_domain_path>
+        <sys_id>5aab18fa1b2058105a6243b4cc4bcbdc</sys_id>
+        <sys_mod_count>0</sys_mod_count>
+        <sys_name>Get Business Applications from Change CI</sys_name>
+        <sys_overrides/>
+        <sys_package display_value="APMDemo" source="x_snc_apmdemo">736b201fdb94d4506d6f1a4813961902</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="APMDemo">736b201fdb94d4506d6f1a4813961902</sys_scope>
+        <sys_update_name>pa_scripts_5aab18fa1b2058105a6243b4cc4bcbdc</sys_update_name>
+        <sys_updated_by>russell.ackerman</sys_updated_by>
+        <sys_updated_on>2020-05-06 18:45:09</sys_updated_on>
+        <table>change_request</table>
+    </pa_scripts>
+    <sys_translated_text action="delete_multiple" query="documentkey=5aab18fa1b2058105a6243b4cc4bcbdc"/>
+</record_update>
